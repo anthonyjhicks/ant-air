@@ -27,9 +27,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script>
       (function() {
+        // Theme: ?theme=light|dark in the URL wins (and is remembered), then the
+        // saved choice, then the system preference.
         var saved = null;
         try { saved = localStorage.getItem("theme"); } catch (e) {}
-        var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        var fromUrl = null;
+        try {
+          var param = new URLSearchParams(window.location.search).get("theme");
+          if (param === "light" || param === "dark") { fromUrl = param; }
+        } catch (e) {}
+        var theme = fromUrl || saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        if (fromUrl) { try { localStorage.setItem("theme", fromUrl); } catch (e) {} }
         document.documentElement.setAttribute("data-theme", theme);
       })();
     </script>

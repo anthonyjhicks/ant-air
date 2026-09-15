@@ -10,6 +10,31 @@ log, and an optional native iOS companion app.
 
 ---
 
+## Screenshots
+
+![Ant Air dashboard](docs/screenshots/dashboard.png)
+
+<table>
+  <tr>
+    <td width="50%"><a href="docs/screenshots/flights.png"><img src="docs/screenshots/flights.png" alt="Flights list"></a></td>
+    <td width="50%"><a href="docs/screenshots/aircraft.png"><img src="docs/screenshots/aircraft.png" alt="Aircraft registry"></a></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/timeline.png"><img src="docs/screenshots/timeline.png" alt="Timeline"></a></td>
+    <td><a href="docs/screenshots/achievements.png"><img src="docs/screenshots/achievements.png" alt="Achievements"></a></td>
+  </tr>
+  <tr>
+    <td><a href="docs/screenshots/dashboard-map.png"><img src="docs/screenshots/dashboard-map.png" alt="Route map"></a></td>
+    <td><a href="docs/screenshots/mobile-dashboard.png"><img src="docs/screenshots/mobile-dashboard.png" alt="Dashboard on a phone" height="420"></a></td>
+  </tr>
+</table>
+
+All screenshots show the fictional demo data (`scripts/seed_demo_data.py`) in
+the light theme; there is a dark theme too. The **[user guide](docs/user-guide.md)**
+walks through every page.
+
+---
+
 ## Highlights
 
 - **Dashboard** with a boarding-pass style next-flight card, headline stats,
@@ -144,6 +169,8 @@ The rule lives in `app/services/flight_groups.py`.
 ---
 
 ## Pages
+
+Each page is described with screenshots in the [user guide](docs/user-guide.md).
 
 | Route | Description |
 |---|---|
