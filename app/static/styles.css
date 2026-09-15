@@ -1462,6 +1462,13 @@ td.actions-cell { white-space: nowrap; }
   overflow-wrap: anywhere;
 }
 
+/* Dates and registrations: keep them on one line at a slightly smaller size. */
+.summary-card p.mono {
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 .summary-card--action {
   cursor: pointer;
   text-align: left;
