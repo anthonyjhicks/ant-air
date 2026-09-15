@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block page_title %}Achievements{% endblock %}
+{% block content %}
+{% set total_badges = achievements|length %}
+{% set earned_pct = ((earned|length / total_badges) * 100)|round|int if total_badges else 0 %}
+<header class="page-header">
+  <div>
+    <p class="page-header__eyebrow">Views</p>
+    <h1 class="page-header__title">Achievements</h1>
+    <p class="page-header__lead">
+      <strong>{{ earned|length }}</strong> of <strong>{{ total_badges }}</strong> badges earned.
+      Keep flying to unlock the rest.
+    </p>
+  </div>
+  <div class="page-header__actions">
+    <div class="achievement-progress" title="{{ earned_pct }}% earned" aria-label="{{ earned_pct }}% of badges earned">
+      <div class="achievement-progress__fill" style="width: {{ earned_pct }}%"></div>
+    </div>
+  </div>
+</header>
+
+<section class="achievements-section">
+  <h3 class="achievements-section__title">Earned ({{ earned|length }})</h3>
+  <div class="achievement-grid">
+    {% for item in earned %}
+      {% set badge = item.badge %}
+      {% set progress = item.progress %}
+      <article class="achievement-badge is-earned" data-badge-id="{{ badge.id }}">
+        <div class="achievement-badge__icon">
+          {% if badge.icon_url %}
+            <img src="{{ badge.icon_url }}" alt="{{ badge.name }}">
+          {% else %}
+            <span class="achievement-badge__emoji">{{ badge.icon_emoji or '🏆' }}</span>
+          {% endif %}
+        </div>
+        <h4 class="achievement-badge__title">{{ badge.name }}</h4>
+        <p class="achievement-badge__description">{{ badge.description }}</p>
+        <div class="achievement-badge__stats">
+          <span class="achievement-badge__progress">✓ {{ progress.current }} / {{ progress.target }}</span>
+          {% if progress.date_earned %}
+            <span class="achievement-badge__date">Earned: {{ progress.date_earned.strftime('%b %d, %Y') }}</span>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="achievements-section">
+  <h3 class="achievements-section__title">Locked ({{ locked|length }})</h3>
+  <div class="achievement-grid">
+    {% for item in locked %}
+      {% set badge = item.badge %}
+      {% set progress = item.progress %}
+      <article class="achievement-badge is-locked" data-badge-id="{{ badge.id }}">
+        <div class="achievement-badge__icon">
+          {% if badge.icon_url %}
+            <img src="{{ badge.icon_url }}" alt="{{ badge.name }}" class="achievement-badge__icon--locked">
+          {% else %}
+            <span class="achievement-badge__emoji">{{ badge.icon_emoji or '🔒' }}</span>
+          {% endif %}
+        </div>
+        <h4 class="achievement-badge__title">{{ badge.name }}</h4>
+        <p class="achievement-badge__description">{{ badge.description }}</p>
+        <div class="achievement-badge__progress-bar">
+          <div class="achievement-badge__progress-fill" style="width: {{ progress.progress_percent }}%"></div>
+        </div>
+        <div class="achievement-badge__stats">
+          <span class="achievement-badge__progress">{{ progress.current }} / {{ progress.target }}</span>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% include 'achievement_detail_modal.html' %}
+{% endblock %}

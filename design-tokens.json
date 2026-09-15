@@ -1,0 +1,50 @@
+{
+  "$comment": "Ant Air design tokens. Mirrors the CSS custom properties in app/static/styles.css so native clients can match the web palette.",
+  "color": {
+    "brand": { "light": "#f2b705", "dark": "#ffc72c" },
+    "brandStrong": { "light": "#d9a200", "dark": "#ffd35a" },
+    "brandDeep": { "light": "#9a7200", "dark": "#ffdd7a" },
+    "brandInk": { "light": "#1c1500", "dark": "#1c1500" },
+    "accent": { "light": "#2a4bc4", "dark": "#7fb2ff" },
+    "background": { "light": "#f4f0e7", "dark": "#0b0f1a" },
+    "backgroundElevated": { "light": "#ece7db", "dark": "#0f1524" },
+    "panel": { "light": "#fffdf9", "dark": "#141b2d" },
+    "panelSoft": { "light": "#f8f4ec", "dark": "#111827" },
+    "text": { "light": "#1b2033", "dark": "#e6e9f2" },
+    "textStrong": { "light": "#0f1322", "dark": "#ffffff" },
+    "muted": { "light": "#5f667b", "dark": "#97a0b5" },
+    "summaryLabel": { "light": "#6d7489", "dark": "#8b94a9" },
+    "border": { "light": "rgba(27, 32, 51, 0.12)", "dark": "rgba(148, 163, 184, 0.16)" },
+    "inputBorder": { "light": "rgba(27, 32, 51, 0.2)", "dark": "rgba(148, 163, 184, 0.28)" },
+    "link": { "light": "#1f3fae", "dark": "#9cc3ff" },
+    "danger": { "light": "#c2410c", "dark": "#f43f5e" },
+    "success": { "light": "#15803d", "dark": "#4ade80" },
+    "warning": { "light": "#b45309", "dark": "#fbbf24" },
+    "chart": {
+      "light": ["#2a4bc4", "#e0a800", "#0f8b8d", "#d95d39", "#6b4fbb", "#8a93a8", "#2f9e44", "#c2255c"],
+      "dark": ["#7fb2ff", "#ffc72c", "#2dd4bf", "#fb923c", "#a78bfa", "#94a3b8", "#4ade80", "#f472b6"]
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "display": "Bricolage Grotesque, Onest, system-ui, sans-serif",
+      "body": "Onest, system-ui, -apple-system, Segoe UI, sans-serif",
+      "monospace": "IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
+    },
+    "fontSize": { "xs": 11, "sm": 12, "base": 15, "md": 16, "lg": 18, "xl": 22, "xxl": 28, "display": 38 },
+    "fontWeight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700, "display": 750 },
+    "letterSpacing": { "label": "0.12em", "display": "-0.025em" }
+  },
+  "spacing": { "xxs": 2, "xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 20, "xxl": 24, "xxxl": 32 },
+  "radius": { "sm": 8, "md": 10, "lg": 14, "xl": 20, "pill": 999 },
+  "shadow": {
+    "panel": {
+      "light": "0 1px 2px rgba(27, 32, 51, 0.04), 0 14px 34px -22px rgba(27, 32, 51, 0.4)",
+      "dark": "0 1px 0 rgba(255, 255, 255, 0.02), 0 20px 40px -24px rgba(0, 0, 0, 0.8)"
+    },
+    "hover": {
+      "light": "0 22px 44px -26px rgba(27, 32, 51, 0.5)",
+      "dark": "0 24px 48px -24px rgba(0, 0, 0, 0.9)"
+    }
+  }
+}

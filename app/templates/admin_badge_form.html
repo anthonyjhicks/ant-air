@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% macro value_or_empty(value) -%}
+  {{ "" if value is none else value }}
+{%- endmacro %}
+
+{% block page_title %}{{ "Edit badge" if badge else "New badge" }}{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="page-header__eyebrow">Admin</p>
+    <h1 class="page-header__title">{{ "Edit badge" if badge else "New badge" }}</h1>
+  </div>
+  <div class="page-header__actions">
+    <a class="button ghost" href="{{ url_for('main.admin_badges_list') }}">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All badges
+    </a>
+  </div>
+</header>
+<section class="panel">
+  <form method="post">
+    <h3>Basic Information</h3>
+    <div class="form-grid">
+      <label>
+        Badge Name *
+        <input type="text" name="name" value="{{ value_or_empty(badge.name) }}" required>
+      </label>
+
+      <label>
+        Category
+        <input type="text" name="category" value="{{ value_or_empty(badge.category) }}"
+               list="categories" placeholder="e.g., milestones, geographic">
+        <datalist id="categories">
+          <option value="milestones">
+          <option value="geographic">
+          <option value="equipment">
+          <option value="temporal">
+          <option value="loyalty">
+        </datalist>
+      </label>
+
+      <label style="grid-column: 1 / -1;">
+        Description
+        <textarea name="description" rows="3">{{ value_or_empty(badge.description) }}</textarea>
+      </label>
+    </div>
+
+    <h3>Achievement Criteria</h3>
+    <div class="form-grid">
+      <label>
+        Badge Type *
+        <select name="badge_type" required>
+          <option value="flight_count" {% if badge and badge.badge_type == 'flight_count' %}selected{% endif %}>Flight Count</option>
+          <option value="total_miles" {% if badge and badge.badge_type == 'total_miles' %}selected{% endif %}>Total Miles</option>
+          <option value="countries_visited" {% if badge and badge.badge_type == 'countries_visited' %}selected{% endif %}>Countries Visited</option>
+          <option value="continents_visited" {% if badge and badge.badge_type == 'continents_visited' %}selected{% endif %}>Continents Visited</option>
+          <option value="aircraft_types" {% if badge and badge.badge_type == 'aircraft_types' %}selected{% endif %}>Aircraft Types</option>
+          <option value="unique_registrations" {% if badge and badge.badge_type == 'unique_registrations' %}selected{% endif %}>Unique Registrations</option>
+          <option value="airline_count" {% if badge and badge.badge_type == 'airline_count' %}selected{% endif %}>Airline Count</option>
+          <option value="red_eye_count" {% if badge and badge.badge_type == 'red_eye_count' %}selected{% endif %}>Red-Eye Flights</option>
+          <option value="rare_aircraft" {% if badge and badge.badge_type == 'rare_aircraft' %}selected{% endif %}>Rare Aircraft</option>
+          <option value="single_year_flights" {% if badge and badge.badge_type == 'single_year_flights' %}selected{% endif %}>Single Year Flights</option>
+        </select>
+      </label>
+
+      <label>
+        Threshold Value *
+        <input type="number" name="threshold_value" value="{{ badge.threshold_value if badge else '' }}" required>
+      </label>
+    </div>
+
+    <h3>Display Settings</h3>
+    <div class="form-grid">
+      <label>
+        Icon Emoji
+        <input type="text" name="icon_emoji" value="{{ value_or_empty(badge.icon_emoji) }}"
+               placeholder="🏆" maxlength="8">
+      </label>
+
+      <label>
+        Icon URL (optional)
+        <input type="url" name="icon_url" value="{{ value_or_empty(badge.icon_url) }}"
+               placeholder="https://example.com/icon.png">
+      </label>
+
+      <label>
+        Display Order
+        <input type="number" name="display_order" value="{{ badge.display_order if badge else 0 }}">
+      </label>
+
+      <label class="hint">
+        <input type="checkbox" name="is_active" {% if not badge or badge.is_active %}checked{% endif %}>
+        Active (visible to users)
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="button">Save Badge</button>
+      <a href="{{ url_for('main.admin_badges_list') }}" class="button ghost">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

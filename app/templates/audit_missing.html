@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Missing Data Audit</h2>
+        <div class="panel-meta">
+          {% if active_filters or exclude_grouped %}
+            Showing {{ flights | length }} of {{ summary.total }} flights.
+            {% if active_filters %}
+              Filter: {{ active_filter_labels | join(", ") }} ·
+            {% endif %}
+            {% if exclude_grouped %}
+              Excluding grouped entries with resolved data ·
+            {% endif %}
+            <a href="{{ url_for('main.audit_missing') }}">Clear</a>
+          {% else %}
+            {{ summary.total }} flights with missing airline, aircraft, or country details
+          {% endif %}
+        </div>
+        <label class="audit-toggle">
+          <input
+            type="checkbox"
+            class="audit-toggle__input"
+            data-audit-missing-grouped-toggle
+            {% if exclude_grouped %}checked{% endif %}
+          >
+          <span class="audit-toggle__track" aria-hidden="true">
+            <span class="audit-toggle__thumb"></span>
+          </span>
+          <span class="audit-toggle__label">
+            Exclude grouped entries with resolved data
+          </span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  {% set grouped_param = "1" if exclude_grouped else None %}
+  <section class="summary-grid">
+    <a
+      class="summary-card summary-card--link {% if 'airline' in active_filters %}is-active{% endif %}"
+      href="{{ url_for('main.audit_missing', missing='airline', exclude_grouped=grouped_param) }}"
+    >
+      <h3>Missing airline</h3>
+      <p>{{ summary.missing_airline }}</p>
+    </a>
+    <a
+      class="summary-card summary-card--link {% if 'aircraft' in active_filters %}is-active{% endif %}"
+      href="{{ url_for('main.audit_missing', missing='aircraft', exclude_grouped=grouped_param) }}"
+    >
+      <h3>Missing aircraft</h3>
+      <p>{{ summary.missing_aircraft }}</p>
+    </a>
+    <a
+      class="summary-card summary-card--link {% if 'start_country' in active_filters %}is-active{% endif %}"
+      href="{{ url_for('main.audit_missing', missing='start_country', exclude_grouped=grouped_param) }}"
+    >
+      <h3>Missing start country</h3>
+      <p>{{ summary.missing_start_country }}</p>
+    </a>
+    <a
+      class="summary-card summary-card--link {% if 'end_country' in active_filters %}is-active{% endif %}"
+      href="{{ url_for('main.audit_missing', missing='end_country', exclude_grouped=grouped_param) }}"
+    >
+      <h3>Missing end country</h3>
+      <p>{{ summary.missing_end_country }}</p>
+    </a>
+  </section>
+
+  <section class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Group</th>
+          <th>Date</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Airline</th>
+          <th>Aircraft</th>
+          <th>Start Country</th>
+          <th>End Country</th>
+          <th>Source</th>
+          <th>Missing</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for flight in flights %}
+          <tr>
+            <td>{{ flight.id }}</td>
+            <td>
+              {% if flight.grouping_id %}
+                {{ flight.grouping_id[:8] }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ flight.start_date }}</td>
+            <td>{{ flight.origin_name }}</td>
+            <td>{{ flight.destination_name }}</td>
+            <td>{{ flight.airline_code or "-" }}</td>
+            <td>{{ flight.aircraft or "-" }}</td>
+            <td>{{ flight.start_country or "-" }}</td>
+            <td>{{ flight.end_country or "-" }}</td>
+            <td>{{ flight.source_file or "-" }}</td>
+            <td>{{ flight.missing_labels | join(", ") }}</td>
+            <td class="actions">
+              <a class="button ghost" href="{{ url_for('main.flight_edit', flight_id=flight.id) }}">
+                Edit
+              </a>
+              <button
+                type="button"
+                class="button ghost"
+                data-flight-history-refresh
+                data-flight-history-url="{{ url_for('main.flight_history_refresh', flight_id=flight.id) }}"
+                data-flight-history-reload="true"
+              >
+                Refresh history
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not flights %}
+          <tr>
+            <td colspan="12">No flights with missing airline, aircraft, or country data.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

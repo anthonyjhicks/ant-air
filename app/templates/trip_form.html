@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% macro value_or_empty(value) -%}
+  {{ "" if value is none else value }}
+{%- endmacro %}
+{% block page_title %}{{ "Edit trip" if trip else "Add trip" }}{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Trips</p>
+      <h1 class="page-header__title">{{ "Edit trip" if trip else "Add trip" }}</h1>
+      <p class="page-header__lead">Dates can be as vague as a year; add legs for each flight, train, drive or sailing.</p>
+    </div>
+    <div class="page-header__actions">
+      <a class="button ghost" href="{{ url_for('main.trip_list') }}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All trips
+      </a>
+    </div>
+  </header>
+  <section class="panel">
+    <form method="post" data-trip-form>
+      {% if next_url %}
+        <input type="hidden" name="next" value="{{ next_url }}">
+      {% endif %}
+      <h3>Trip Details</h3>
+      <div class="form-grid">
+        <label>
+          Trip Name
+          <input type="text" name="name" value="{{ value_or_empty(trip.name if trip else none) }}">
+        </label>
+        <label>
+          Trip ID
+          <input type="text" name="trip_code" value="{{ value_or_empty(trip.trip_code if trip else none) }}">
+        </label>
+        <label>
+          Trip Type
+          <input type="text" name="trip_type" value="{{ value_or_empty(trip.trip_type if trip else none) }}">
+        </label>
+      </div>
+      <div class="form-grid">
+        <label>
+          Start Year
+          <input type="number" name="start_year" min="1900" max="2100" value="{{ value_or_empty(trip.start_date_year if trip else none) }}">
+        </label>
+        <label>
+          Start Month
+          <input type="number" name="start_month" min="1" max="12" value="{{ value_or_empty(trip.start_date_month if trip else none) }}">
+        </label>
+        <label>
+          Start Day
+          <input type="number" name="start_day" min="1" max="31" value="{{ value_or_empty(trip.start_date_day if trip else none) }}">
+        </label>
+        <label>
+          Start Precision
+          <select name="start_precision">
+            <option value="">Auto</option>
+            {% for precision in date_precisions %}
+              <option value="{{ precision }}" {% if trip and trip.start_date_precision == precision %}selected{% endif %}>
+                {{ precision | title }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <div class="form-grid">
+        <label>
+          End Year
+          <input type="number" name="end_year" min="1900" max="2100" value="{{ value_or_empty(trip.end_date_year if trip else none) }}">
+        </label>
+        <label>
+          End Month
+          <input type="number" name="end_month" min="1" max="12" value="{{ value_or_empty(trip.end_date_month if trip else none) }}">
+        </label>
+        <label>
+          End Day
+          <input type="number" name="end_day" min="1" max="31" value="{{ value_or_empty(trip.end_date_day if trip else none) }}">
+        </label>
+        <label>
+          End Precision
+          <select name="end_precision">
+            <option value="">Auto</option>
+            {% for precision in date_precisions %}
+              <option value="{{ precision }}" {% if trip and trip.end_date_precision == precision %}selected{% endif %}>
+                {{ precision | title }}
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <label>
+        Notes
+        <textarea name="notes" rows="3">{{ value_or_empty(trip.notes if trip else none) }}</textarea>
+      </label>
+
+      <h3>Trip Legs</h3>
+      <div class="trip-legs" data-trip-legs data-next-index="{{ legs | length }}">
+        {% for leg in legs %}
+          <div class="trip-leg" data-trip-leg>
+            <input type="hidden" name="legs-{{ loop.index0 }}-id" value="{{ value_or_empty(leg.id if leg else none) }}">
+            <input type="hidden" name="legs-{{ loop.index0 }}-delete" value="0" data-leg-delete>
+            <div class="trip-leg__header">
+              <h4 data-leg-title>Leg {{ loop.index }}</h4>
+              <div class="button-group">
+                <button type="button" class="button ghost" data-leg-insert>Insert after</button>
+                <button type="button" class="button ghost" data-leg-remove>Remove</button>
+              </div>
+            </div>
+            <div class="form-grid">
+              <label>
+                Sequence
+                <input type="number" name="legs-{{ loop.index0 }}-sequence" value="{{ value_or_empty(leg.sequence if leg else none) }}" min="1">
+              </label>
+              <label>
+                Mode
+                <select name="legs-{{ loop.index0 }}-mode">
+                  {% for mode_value, mode_label in leg_modes %}
+                    <option value="{{ mode_value }}" {% if leg and leg.mode == mode_value %}selected{% endif %}>
+                      {{ mode_label }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
+                Carrier Name
+                <input type="text" name="legs-{{ loop.index0 }}-carrier_name" value="{{ value_or_empty(leg.carrier_name if leg else none) }}">
+              </label>
+              <label>
+                Carrier Code
+                <input type="text" name="legs-{{ loop.index0 }}-carrier_code" value="{{ value_or_empty(leg.carrier_code if leg else none) }}">
+              </label>
+              <label>
+                Service Class
+                <input type="text" name="legs-{{ loop.index0 }}-service_class" value="{{ value_or_empty(leg.service_class if leg else none) }}">
+              </label>
+              <label>
+                Flight/Service Number
+                <input type="text" name="legs-{{ loop.index0 }}-flight_number" value="{{ value_or_empty(leg.flight_number if leg else none) }}">
+              </label>
+              <label>
+                Aircraft Type
+                <input type="text" name="legs-{{ loop.index0 }}-aircraft_type" value="{{ value_or_empty(leg.aircraft_type if leg else none) }}">
+              </label>
+              <label>
+                Registration
+                <input type="text" name="legs-{{ loop.index0 }}-aircraft_registration" value="{{ value_or_empty(leg.aircraft_registration if leg else none) }}">
+              </label>
+            </div>
+            <div class="form-grid">
+              <label>
+                Start Country
+                <input type="text" name="legs-{{ loop.index0 }}-start_country" value="{{ value_or_empty(leg.start_country if leg else none) }}">
+              </label>
+              <label>
+                Start City
+                <input type="text" name="legs-{{ loop.index0 }}-start_city_name" value="{{ value_or_empty(leg.start_city_name if leg else none) }}">
+              </label>
+              <label>
+                Start Airport/Station
+                <input
+                  type="text"
+                  name="legs-{{ loop.index0 }}-start_airport"
+                  value="{{ value_or_empty(leg.start_airport if leg else none) }}"
+                  data-airport-lookup
+                  data-airport-city-field="start_city_name"
+                  data-airport-country-field="start_country"
+                >
+              </label>
+              <label>
+                End Country
+                <input type="text" name="legs-{{ loop.index0 }}-end_country" value="{{ value_or_empty(leg.end_country if leg else none) }}">
+              </label>
+              <label>
+                End City
+                <input type="text" name="legs-{{ loop.index0 }}-end_city_name" value="{{ value_or_empty(leg.end_city_name if leg else none) }}">
+              </label>
+              <label>
+                End Airport/Station
+                <input
+                  type="text"
+                  name="legs-{{ loop.index0 }}-end_airport"
+                  value="{{ value_or_empty(leg.end_airport if leg else none) }}"
+                  data-airport-lookup
+                  data-airport-city-field="end_city_name"
+                  data-airport-country-field="end_country"
+                >
+              </label>
+            </div>
+            <div class="form-grid">
+              <label>
+                Start Year
+                <input type="number" name="legs-{{ loop.index0 }}-start_year" min="1900" max="2100" value="{{ value_or_empty(leg.start_date_year if leg else none) }}">
+              </label>
+              <label>
+                Start Month
+                <input type="number" name="legs-{{ loop.index0 }}-start_month" min="1" max="12" value="{{ value_or_empty(leg.start_date_month if leg else none) }}">
+              </label>
+              <label>
+                Start Day
+                <input type="number" name="legs-{{ loop.index0 }}-start_day" min="1" max="31" value="{{ value_or_empty(leg.start_date_day if leg else none) }}">
+              </label>
+              <label>
+                Start Precision
+                <select name="legs-{{ loop.index0 }}-start_precision">
+                  <option value="">Auto</option>
+                  {% for precision in date_precisions %}
+                    <option value="{{ precision }}" {% if leg and leg.start_date_precision == precision %}selected{% endif %}>
+                      {{ precision | title }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <div class="form-grid">
+              <label>
+                End Year
+                <input type="number" name="legs-{{ loop.index0 }}-end_year" min="1900" max="2100" value="{{ value_or_empty(leg.end_date_year if leg else none) }}">
+              </label>
+              <label>
+                End Month
+                <input type="number" name="legs-{{ loop.index0 }}-end_month" min="1" max="12" value="{{ value_or_empty(leg.end_date_month if leg else none) }}">
+              </label>
+              <label>
+                End Day
+                <input type="number" name="legs-{{ loop.index0 }}-end_day" min="1" max="31" value="{{ value_or_empty(leg.end_date_day if leg else none) }}">
+              </label>
+              <label>
+                End Precision
+                <select name="legs-{{ loop.index0 }}-end_precision">
+                  <option value="">Auto</option>
+                  {% for precision in date_precisions %}
+                    <option value="{{ precision }}" {% if leg and leg.end_date_precision == precision %}selected{% endif %}>
+                      {{ precision | title }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+            </div>
+            <label>
+              Notes
+              <textarea name="legs-{{ loop.index0 }}-notes" rows="2">{{ value_or_empty(leg.notes if leg else none) }}</textarea>
+            </label>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="button-group">
+        <button type="button" class="button ghost" data-leg-add>Add leg</button>
+        <button type="button" class="button ghost" data-leg-add-prefill>
+          Add leg and prefill
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="button">Save</button>
+        <a class="button ghost" href="{{ next_url or url_for('main.trip_list') }}">Cancel</a>
+      </div>
+    </form>
+  </section>
+
+  <template data-leg-template>
+    <div class="trip-leg" data-trip-leg>
+      <input type="hidden" name="legs-__index__-id" value="">
+      <input type="hidden" name="legs-__index__-delete" value="0" data-leg-delete>
+      <div class="trip-leg__header">
+        <h4 data-leg-title>Leg</h4>
+        <div class="button-group">
+          <button type="button" class="button ghost" data-leg-insert>Insert after</button>
+          <button type="button" class="button ghost" data-leg-remove>Remove</button>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>
+          Sequence
+          <input type="number" name="legs-__index__-sequence" value="" min="1">
+        </label>
+        <label>
+          Mode
+          <select name="legs-__index__-mode">
+            {% for mode_value, mode_label in leg_modes %}
+              <option value="{{ mode_value }}">{{ mode_label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Carrier Name
+          <input type="text" name="legs-__index__-carrier_name" value="">
+        </label>
+        <label>
+          Carrier Code
+          <input type="text" name="legs-__index__-carrier_code" value="">
+        </label>
+        <label>
+          Service Class
+          <input type="text" name="legs-__index__-service_class" value="">
+        </label>
+        <label>
+          Flight/Service Number
+          <input type="text" name="legs-__index__-flight_number" value="">
+        </label>
+        <label>
+          Aircraft Type
+          <input type="text" name="legs-__index__-aircraft_type" value="">
+        </label>
+        <label>
+          Registration
+          <input type="text" name="legs-__index__-aircraft_registration" value="">
+        </label>
+      </div>
+      <div class="form-grid">
+        <label>
+          Start Country
+          <input type="text" name="legs-__index__-start_country" value="">
+        </label>
+        <label>
+          Start City
+          <input type="text" name="legs-__index__-start_city_name" value="">
+        </label>
+        <label>
+          Start Airport/Station
+          <input
+            type="text"
+            name="legs-__index__-start_airport"
+            value=""
+            data-airport-lookup
+            data-airport-city-field="start_city_name"
+            data-airport-country-field="start_country"
+          >
+        </label>
+        <label>
+          End Country
+          <input type="text" name="legs-__index__-end_country" value="">
+        </label>
+        <label>
+          End City
+          <input type="text" name="legs-__index__-end_city_name" value="">
+        </label>
+        <label>
+          End Airport/Station
+          <input
+            type="text"
+            name="legs-__index__-end_airport"
+            value=""
+            data-airport-lookup
+            data-airport-city-field="end_city_name"
+            data-airport-country-field="end_country"
+          >
+        </label>
+      </div>
+      <div class="form-grid">
+        <label>
+          Start Year
+          <input type="number" name="legs-__index__-start_year" min="1900" max="2100" value="">
+        </label>
+        <label>
+          Start Month
+          <input type="number" name="legs-__index__-start_month" min="1" max="12" value="">
+        </label>
+        <label>
+          Start Day
+          <input type="number" name="legs-__index__-start_day" min="1" max="31" value="">
+        </label>
+        <label>
+          Start Precision
+          <select name="legs-__index__-start_precision">
+            <option value="">Auto</option>
+            {% for precision in date_precisions %}
+              <option value="{{ precision }}">{{ precision | title }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <div class="form-grid">
+        <label>
+          End Year
+          <input type="number" name="legs-__index__-end_year" min="1900" max="2100" value="">
+        </label>
+        <label>
+          End Month
+          <input type="number" name="legs-__index__-end_month" min="1" max="12" value="">
+        </label>
+        <label>
+          End Day
+          <input type="number" name="legs-__index__-end_day" min="1" max="31" value="">
+        </label>
+        <label>
+          End Precision
+          <select name="legs-__index__-end_precision">
+            <option value="">Auto</option>
+            {% for precision in date_precisions %}
+              <option value="{{ precision }}">{{ precision | title }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <label>
+        Notes
+        <textarea name="legs-__index__-notes" rows="2"></textarea>
+      </label>
+    </div>
+  </template>
+{% endblock %}

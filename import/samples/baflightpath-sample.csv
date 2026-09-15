@@ -1,0 +1,7 @@
+Date (dd/mm/yyyy),AirlineCode,FlightNumber,Origin,OriginCountry,Destination,DestinationCountry,Traveller
+14/07/2023,BA,BA0117,London Heathrow,United Kingdom,New York JFK,United States,SAM RIVERS
+21/07/2023,BA,BA0112,New York JFK,United States,London Heathrow,United Kingdom,SAM RIVERS
+03/12/2023,BA,BA0472,London Heathrow,United Kingdom,Barcelona,Spain,SAM RIVERS
+06/12/2023,BA,BA0477,Barcelona,Spain,London Heathrow,United Kingdom,SAM RIVERS
+18/05/2024,BA,BA0632,London Heathrow,United Kingdom,Athens,Greece,SAM RIVERS
+25/05/2024,BA,BA0633,Athens,Greece,London Heathrow,United Kingdom,SAM RIVERS

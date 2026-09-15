@@ -1,0 +1,49 @@
+<div class="timeline-item__content">
+  <div class="timeline-flight-card">
+    {% if flight.aircraft_thumb and flight.aircraft_thumb.thumbnail_url %}
+    <div class="timeline-aircraft-photo">
+      <img src="{{ flight.aircraft_thumb.thumbnail_url }}"
+           alt="{{ flight.aircraft_registration }}"
+           class="timeline-aircraft-thumb"
+           data-timeline-aircraft-thumb
+           data-full-src="{{ flight.aircraft_thumb.photo_url or flight.aircraft_thumb.thumbnail_url }}"
+           data-title="{{ flight.aircraft_registration }} - {{ flight.aircraft }}">
+    </div>
+    {% endif %}
+
+    <div class="timeline-flight-info">
+      <div class="timeline-route">
+        <span>{{ flight.start_city_name or flight.start_airport }}</span>
+        <span class="timeline-route__arrow">→</span>
+        <span>{{ flight.end_city_name or flight.end_airport }}</span>
+      </div>
+
+      <div class="timeline-meta">
+        <span class="timeline-meta__item">
+          {{ flight.start_date.strftime('%b %d, %Y') if flight.start_date }}
+        </span>
+        {% if flight.airline_code and flight.flight_number %}
+        <span class="timeline-meta__item">
+          {{ flight.airline_code }}{{ flight.flight_number }}
+        </span>
+        {% endif %}
+        {% if flight.aircraft %}
+        <span class="timeline-meta__item">{{ flight.aircraft }}</span>
+        {% endif %}
+        {% if flight.aircraft_registration %}
+        <span class="timeline-meta__item">{{ flight.aircraft_registration }}</span>
+        {% endif %}
+        {% if flight.distance %}
+        <span class="timeline-meta__item">{{ flight.distance|round|int }} mi</span>
+        {% endif %}
+      </div>
+
+      {% if flight.start_date and flight.end_date %}
+      {% set duration_days = (flight.end_date - flight.start_date).days %}
+      {% set duration_percent = (duration_days / max_duration * 100)|round|int %}
+      <div class="timeline-duration-bar"
+           style="width: {{ duration_percent }}%; background: linear-gradient(to right, #2563eb, rgba(37, 99, 235, 0.5));"></div>
+      {% endif %}
+    </div>
+  </div>
+</div>

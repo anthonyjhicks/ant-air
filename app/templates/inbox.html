@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block page_title %}Inbox{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Import</p>
+      <h1 class="page-header__title">Inbox</h1>
+      <p class="page-header__lead">
+        <span data-inbox-meta>{{ flights|length }} draft flight{{ "" if flights|length == 1 else "s" }}</span>
+        waiting for review. Webhook and scanned flights land here until you approve them.
+      </p>
+    </div>
+    <div class="page-header__actions">
+      <a class="button ghost" href="{{ url_for('main.flight_list') }}">
+        <i class="fa-solid fa-list" aria-hidden="true"></i> Approved flights
+      </a>
+    </div>
+  </header>
+  <section class="panel">
+    <div class="table-scroll">
+    <table class="inbox-table">
+      <thead>
+        <tr>
+          <th>Received</th>
+          <th>Date</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Flight</th>
+          <th>Supplier ref</th>
+          <th>Airline</th>
+          <th>Traveller</th>
+          <th>Quality</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for flight in flights %}
+          {% set missing_optional = [] %}
+          {% if not flight.start_airport %}
+            {% set missing_optional = missing_optional + ["Start airport"] %}
+          {% endif %}
+          {% if not flight.end_airport %}
+            {% set missing_optional = missing_optional + ["End airport"] %}
+          {% endif %}
+          {% if not flight.start_country %}
+            {% set missing_optional = missing_optional + ["Start country"] %}
+          {% endif %}
+          {% if not flight.end_country %}
+            {% set missing_optional = missing_optional + ["End country"] %}
+          {% endif %}
+          {% if not flight.start_time %}
+            {% set missing_optional = missing_optional + ["Start time"] %}
+          {% endif %}
+          {% if not flight.end_time %}
+            {% set missing_optional = missing_optional + ["End time"] %}
+          {% endif %}
+          {% if not flight.aircraft %}
+            {% set missing_optional = missing_optional + ["Aircraft"] %}
+          {% endif %}
+          {% if not flight.service_class %}
+            {% set missing_optional = missing_optional + ["Class"] %}
+          {% endif %}
+          {% if not flight.booking_site %}
+            {% set missing_optional = missing_optional + ["Booking site"] %}
+          {% endif %}
+          {% if not flight.ticket_number %}
+            {% set missing_optional = missing_optional + ["Ticket"] %}
+          {% endif %}
+          <tr data-flight-id="{{ flight.id }}">
+            <td class="{{ 'field-missing' if not flight.created_at else '' }}">
+              {{ flight.created_at.strftime("%Y-%m-%d %H:%M") if flight.created_at else "-" }}
+            </td>
+            <td class="{{ 'field-missing' if not flight.start_date else '' }}">
+              {{ flight.start_date or "-" }}
+            </td>
+            <td>
+              <div class="cell-main {{ 'field-missing' if not flight.start_city_name else '' }}">
+                {{ flight.start_city_name or "-" }}
+              </div>
+              <div class="cell-sub {{ 'field-missing' if not flight.start_airport else '' }}">
+                Airport: {{ flight.start_airport or "-" }}
+              </div>
+              <div class="cell-sub {{ 'field-missing' if not flight.start_country else '' }}">
+                Country: {{ flight.start_country or "-" }}
+              </div>
+            </td>
+            <td>
+              <div class="cell-main {{ 'field-missing' if not flight.end_city_name else '' }}">
+                {{ flight.end_city_name or "-" }}
+              </div>
+              <div class="cell-sub {{ 'field-missing' if not flight.end_airport else '' }}">
+                Airport: {{ flight.end_airport or "-" }}
+              </div>
+              <div class="cell-sub {{ 'field-missing' if not flight.end_country else '' }}">
+                Country: {{ flight.end_country or "-" }}
+              </div>
+            </td>
+            <td class="{{ 'field-missing' if not flight.flight_number else '' }}">
+              {{ flight.flight_number or "-" }}
+            </td>
+            <td class="{{ 'field-missing' if not flight.supplier_confirmation else '' }}">
+              {{ flight.supplier_confirmation or "-" }}
+            </td>
+            <td class="{{ 'field-missing' if not flight.airline_code else '' }}">
+              {{ flight.airline_code or "-" }}
+            </td>
+            <td class="{{ 'field-missing' if not flight.traveller else '' }}">
+              {{ flight.traveller or "-" }}
+            </td>
+            <td>
+              {% if missing_optional %}
+                <div class="cell-sub">Missing: {{ missing_optional | join(", ") }}</div>
+              {% else %}
+                <div class="cell-sub">Optional fields complete</div>
+              {% endif %}
+            </td>
+            <td class="actions-cell">
+              <div class="actions">
+                <a
+                  class="button ghost"
+                  href="{{ url_for('main.flight_edit', flight_id=flight.id, next=request.path) }}"
+                >
+                  Edit
+                </a>
+                <form
+                  method="post"
+                  action="{{ url_for('main.inbox_approve', flight_id=flight.id) }}"
+                  data-approve-form
+                >
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  <button type="submit" class="button">Approve</button>
+                </form>
+                <form method="post" action="{{ url_for('main.flight_delete', flight_id=flight.id) }}">
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  <button type="submit" class="button danger">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        <tr class="inbox-empty-row" data-inbox-empty {% if flights %}hidden{% endif %}>
+          <td colspan="10">
+            <div class="empty-state">
+              <i class="fa-solid fa-inbox empty-state__icon" aria-hidden="true"></i>
+              <h3 class="empty-state__title">Inbox zero</h3>
+              <p class="empty-state__text">No draft flights waiting for review.</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+  <script>
+    const inboxMeta = document.querySelector("[data-inbox-meta]");
+    const inboxEmptyRow = document.querySelector("[data-inbox-empty]");
+    const approveForms = document.querySelectorAll("[data-approve-form]");
+
+    const updateInboxMeta = (count) => {
+      if (!inboxMeta) {
+        return;
+      }
+      inboxMeta.textContent = `${count} draft flight${count === 1 ? "" : "s"}`;
+    };
+
+    const updateEmptyState = (count) => {
+      if (!inboxEmptyRow) {
+        return;
+      }
+      if (count === 0) {
+        inboxEmptyRow.removeAttribute("hidden");
+      } else {
+        inboxEmptyRow.setAttribute("hidden", "hidden");
+      }
+    };
+
+    const resolveCurrentCount = () => {
+      const rows = document.querySelectorAll("tr[data-flight-id]");
+      return rows.length;
+    };
+
+    approveForms.forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        if (!window.fetch) {
+          return;
+        }
+        event.preventDefault();
+        const submitButton = form.querySelector("button[type='submit']");
+        if (submitButton) {
+          submitButton.disabled = true;
+        }
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "X-Requested-With": "fetch",
+            },
+            body: new FormData(form),
+            credentials: "same-origin",
+          });
+
+          if (!response.ok) {
+            throw new Error("Approve failed");
+          }
+
+          const payload = await response.json();
+          if (!payload.ok) {
+            throw new Error("Approve failed");
+          }
+
+          const row = form.closest("tr[data-flight-id]");
+          if (row) {
+            row.remove();
+          }
+
+          const remaining =
+            typeof payload.remaining === "number"
+              ? payload.remaining
+              : resolveCurrentCount();
+          updateInboxMeta(remaining);
+          updateEmptyState(remaining);
+        } catch (error) {
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+          form.submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}

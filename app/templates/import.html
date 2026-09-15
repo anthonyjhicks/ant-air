@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block page_title %}Import CSV{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Import</p>
+      <h1 class="page-header__title">Import CSV</h1>
+      <p class="page-header__lead">Upload a TripIt CSV export. Google Flights and BA Flightpath files are imported with the scripts in <code>scripts/</code>.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <form method="post" enctype="multipart/form-data" class="import-form">
+      <label class="import-dropzone">
+        <i class="fa-solid fa-file-csv import-dropzone__icon" aria-hidden="true"></i>
+        <span class="import-dropzone__title">Choose a CSV file</span>
+        <span class="import-dropzone__hint">TripIt export format · dates as DD/MM/YYYY, MM/DD/YYYY or YYYY-MM-DD</span>
+        <input type="file" name="csv_file" accept=".csv" required>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="button">
+          <i class="fa-solid fa-upload" aria-hidden="true"></i> Import flights
+        </button>
+      </div>
+    </form>
+
+    <div class="hint">
+      <p>
+        Recognised columns (case-insensitive): TripName, TripID, Type, BookingSite, SupplierConfirmation,
+        BookingDate, Traveller, TicketNumber, AirlineCode, Aircraft, ServiceClass, FlightNumber,
+        StartCountry, StartCityName, StartAirport, StartTerminal, StartLat, StartLong, StartDate, StartTime,
+        EndCountry, EndCityName, EndAirport, EndTerminal, EndLat, EndLong, EndDate, EndTime, Stops, Distance.
+      </p>
+      <p>A fictional example lives at <code>import/samples/tripit-sample.csv</code> in the repository.</p>
+    </div>
+
+    {% if imported %}
+      <p class="success">Imported {{ imported }} flights.</p>
+    {% endif %}
+
+    {% if errors %}
+      <h3>Skipped rows</h3>
+      <ul class="errors">
+        {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+{% endblock %}

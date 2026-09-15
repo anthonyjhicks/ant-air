@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────
+# ci.yml — byte-compile, JS syntax, smoke tests and an image build on
+# every push to main and every pull request. GitHub-hosted runners only;
+# this repository holds no secrets, variables or self-hosted runners.
+# ─────────────────────────────────────────────────────────────
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Byte-compile
+        run: python -m compileall -q app scripts wsgi.py
+      - name: Check JavaScript syntax
+        run: node --check app/static/app.js
+      - name: Tests
+        run: pytest -q
+
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image (not pushed)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          tags: ant-air:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

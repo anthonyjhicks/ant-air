@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Flight History Record</h2>
+        <div class="panel-meta">
+          Flight {{ history.flight_id }} · {{ history.created_at }}
+          {% if history.source %} · Source: {{ history.source }}{% endif %}
+        </div>
+      </div>
+      <div class="button-group">
+        <a class="button ghost" href="{{ url_for('main.flight_edit', flight_id=history.flight_id) }}">
+          Back to flight
+        </a>
+        {% if history.flight_url %}
+          <a class="button ghost" href="{{ history.flight_url }}" target="_blank" rel="noopener">
+            View on FlightAware
+          </a>
+        {% endif %}
+        <form
+          method="post"
+          action="{{ url_for('main.flight_history_record_delete', history_id=history.id) }}"
+          data-history-delete
+        >
+          <input type="hidden" name="next" value="{{ url_for('main.flight_edit', flight_id=history.flight_id) }}">
+          <button type="submit" class="button danger" aria-label="Delete history entry" title="Delete">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            <span class="sr-only">Delete</span>
+          </button>
+        </form>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div>
+        <strong>Status</strong>
+        <div>{{ history.status or "-" }}</div>
+      </div>
+      <div>
+        <strong>Callsign</strong>
+        <div>{{ history.callsign or "-" }}</div>
+      </div>
+      <div>
+        <strong>Flight (IATA/ICAO)</strong>
+        <div>{{ history.flight_number_iata or "-" }} / {{ history.flight_number_icao or "-" }}</div>
+      </div>
+      <div>
+        <strong>Aircraft</strong>
+        <div>{{ history.aircraft_type or "-" }} · {{ history.aircraft_registration or "-" }}</div>
+      </div>
+      <div>
+        <strong>Departure</strong>
+        <div>{{ history.dep_airport_iata or "-" }} · {{ history.scheduled_departure or "-" }}</div>
+      </div>
+      <div>
+        <strong>Arrival</strong>
+        <div>{{ history.arr_airport_iata or "-" }} · {{ history.scheduled_arrival or "-" }}</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>Raw Payload</h3>
+    <pre>{{ payload }}</pre>
+  </section>
+{% endblock %}

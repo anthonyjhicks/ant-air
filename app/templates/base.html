@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{% block page_title %}{% endblock %}{% if self.page_title() | trim %} · {% endif %}{{ app_name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f0e7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0b0f1a" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23f2b705'/%3E%3Cpath d='M51 13 13 29.5l14.5 5.5 5.5 14.5z' fill='%231c1500'/%3E%3Cpath d='M51 13 27.5 35' stroke='%23f2b705' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=Onest:wght@400;500;600;700&display=swap"
+    >
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+      (function() {
+        var saved = null;
+        try { saved = localStorage.getItem("theme"); } catch (e) {}
+        var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="flying-planes" aria-hidden="true" data-flying-planes></div>
+
+    {% set ep = request.endpoint or '' %}
+    {% set views_eps = ['main.timeline', 'main.achievements', 'main.insights'] %}
+    {% set data_eps = ['main.flight_list', 'main.flight_new', 'main.flight_edit', 'main.trip_list', 'main.trip_new', 'main.trip_edit', 'main.trip_detail', 'main.aircraft_list', 'main.flight_history_record_view'] %}
+    {% set import_eps = ['main.inbox', 'main.import_csv'] %}
+    {% set admin_eps = ['main.utilities_scripts', 'main.admin_badges_list', 'main.admin_badge_new', 'main.admin_badge_edit'] %}
+
+    <header class="topbar">
+      <nav class="navbar" aria-label="Primary">
+        <a href="{{ url_for('main.dashboard') }}" class="nav-brand" aria-label="{{ app_name }} home">
+          <span class="brand-mark" aria-hidden="true">
+            <i class="brand-icon fa-solid fa-plane"></i>
+          </span>
+          <span class="brand-text">
+            <span class="brand-title">{{ app_name }}</span>
+            <span class="brand-tagline">Flight log</span>
+          </span>
+        </a>
+
+        <div class="nav-links" id="nav-menu">
+          <a href="{{ url_for('main.dashboard') }}" class="nav-link{% if ep == 'main.dashboard' %} is-current{% endif %}" {% if ep == 'main.dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+
+          <div class="nav-dropdown{% if ep in views_eps %} is-current{% endif %}">
+            <button type="button" class="nav-dropdown__button" aria-haspopup="true" aria-expanded="false">
+              Views
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="nav-dropdown__menu">
+              <a href="{{ url_for('main.timeline') }}"><i class="fa-solid fa-timeline" aria-hidden="true"></i> Timeline</a>
+              <a href="{{ url_for('main.achievements') }}"><i class="fa-solid fa-medal" aria-hidden="true"></i> Achievements</a>
+              <a href="{{ url_for('main.insights') }}"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> AI Insights</a>
+            </div>
+          </div>
+
+          <div class="nav-dropdown{% if ep in data_eps %} is-current{% endif %}">
+            <button type="button" class="nav-dropdown__button" aria-haspopup="true" aria-expanded="false">
+              Data
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="nav-dropdown__menu">
+              <a href="{{ url_for('main.flight_list') }}"><i class="fa-solid fa-plane" aria-hidden="true"></i> Flights</a>
+              <a href="{{ url_for('main.trip_list') }}"><i class="fa-solid fa-suitcase-rolling" aria-hidden="true"></i> Trips</a>
+              <a href="{{ url_for('main.aircraft_list') }}"><i class="fa-solid fa-jet-fighter-up" aria-hidden="true"></i> Aircraft</a>
+            </div>
+          </div>
+
+          <div class="nav-dropdown{% if ep in import_eps %} is-current{% endif %}">
+            <button type="button" class="nav-dropdown__button" aria-haspopup="true" aria-expanded="false">
+              Import
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="nav-dropdown__menu">
+              <a href="{{ url_for('main.inbox') }}"><i class="fa-solid fa-inbox" aria-hidden="true"></i> Inbox</a>
+              <a href="{{ url_for('main.import_csv') }}"><i class="fa-solid fa-file-csv" aria-hidden="true"></i> Import CSV</a>
+            </div>
+          </div>
+
+          <div class="nav-dropdown{% if ep.startswith('main.audit_') %} is-current{% endif %}">
+            <button type="button" class="nav-dropdown__button" aria-haspopup="true" aria-expanded="false">
+              Audits
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="nav-dropdown__menu nav-dropdown__menu--wide">
+              <h4 class="nav-dropdown__heading">Duplicates</h4>
+              <a href="{{ url_for('main.audit_duplicates') }}">Duplicate overview</a>
+              <a href="{{ url_for('main.audit_duplicates_exact') }}">Exact match</a>
+
+              <h4 class="nav-dropdown__heading">Missing data</h4>
+              <a href="{{ url_for('main.audit_missing') }}">Missing overview</a>
+              <a href="{{ url_for('main.audit_missing_airline') }}">Missing airline</a>
+              <a href="{{ url_for('main.audit_missing_aircraft') }}">Missing aircraft</a>
+              <a href="{{ url_for('main.audit_missing_registration') }}">Missing registration</a>
+              <a href="{{ url_for('main.audit_missing_routes') }}">Missing airports</a>
+              <a href="{{ url_for('main.audit_missing_legs') }}">Missing legs</a>
+
+              <h4 class="nav-dropdown__heading">Routes</h4>
+              <a href="{{ url_for('main.audit_routes_pair') }}">City pair</a>
+
+              <h4 class="nav-dropdown__heading">Gemini</h4>
+              <a href="{{ url_for('main.audit_gemini_guesses') }}">Guess audit</a>
+              <a href="{{ url_for('main.audit_gemini_codeshares') }}">Codeshare audit</a>
+            </div>
+          </div>
+
+          <div class="nav-dropdown{% if ep in admin_eps %} is-current{% endif %}">
+            <button type="button" class="nav-dropdown__button" aria-haspopup="true" aria-expanded="false">
+              Admin
+              <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="nav-dropdown__menu">
+              <a href="{{ url_for('main.utilities_scripts') }}"><i class="fa-solid fa-terminal" aria-hidden="true"></i> Utilities</a>
+              <a href="{{ url_for('main.admin_badges_list') }}"><i class="fa-solid fa-award" aria-hidden="true"></i> Manage badges</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <a class="nav-icon-btn nav-add-btn" href="{{ url_for('main.flight_new') }}" title="Add flight" aria-label="Add flight">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          </a>
+          <button class="nav-icon-btn nav-scan-btn" type="button" data-scan-trigger title="Scan aircraft registration" aria-label="Scan aircraft registration">
+            <i class="fa-solid fa-camera" aria-hidden="true"></i>
+          </button>
+          <button class="nav-icon-btn nav-refresh-history-btn" type="button" data-refresh-today-history title="Refresh aircraft history for today's flights" aria-label="Refresh aircraft history for today's flights">
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          </button>
+          <button class="nav-icon-btn nav-theme-btn" type="button" data-theme-toggle title="Toggle light/dark mode" aria-label="Toggle light/dark mode">
+            <i class="fa-solid fa-sun" aria-hidden="true"></i>
+          </button>
+          <button class="nav-icon-btn nav-toggle" type="button" aria-controls="nav-menu" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <i class="fa-solid fa-bars" aria-hidden="true"></i>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" class="container{% block main_class %}{% endblock %}">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-list">
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}" role="status">
+                <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'error' %}fa-circle-exclamation{% else %}fa-circle-info{% endif %}" aria-hidden="true"></i>
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      <div class="page-toolbar">
+        <div class="main-search" data-nav-search>
+          <div class="main-search__input-wrap">
+            <i class="fa-solid fa-magnifying-glass main-search__icon" aria-hidden="true"></i>
+            <input
+              type="search"
+              class="main-search__input"
+              placeholder="Search flights, aircraft, airports, registrations…"
+              aria-label="Search flights and aircraft"
+              data-search-input
+              autocomplete="off"
+            >
+            <kbd class="main-search__kbd" data-search-kbd>/</kbd>
+          </div>
+          <div class="main-search__dropdown" data-search-dropdown hidden>
+            <div class="main-search__loading" data-search-loading hidden>Searching…</div>
+            <div class="main-search__results" data-search-results></div>
+            <div class="main-search__empty" data-search-empty hidden>No results found.</div>
+          </div>
+        </div>
+        {% block toolbar_extra %}{% endblock %}
+      </div>
+      {% block content %}{% endblock %}
+    </main>
+
+    <section class="modal" data-reg-lookup-modal hidden>
+      <div class="modal__backdrop" data-reg-lookup-close></div>
+      <div class="modal__content modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="reg-lookup-title">
+        <div class="modal__header">
+          <div class="reg-lookup__header-row">
+            <h2 id="reg-lookup-title" data-reg-lookup-title>Aircraft lookup</h2>
+            <div class="reg-lookup__input-wrap">
+              <input
+                type="text"
+                class="reg-lookup__input"
+                placeholder="Registration, e.g. G-XLEA"
+                aria-label="Aircraft registration"
+                data-reg-lookup-input
+                autocomplete="off"
+              >
+              <button type="button" class="button" data-reg-lookup-go>Look up</button>
+            </div>
+          </div>
+          <button class="button ghost modal__close" type="button" data-reg-lookup-close aria-label="Close">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="modal__body">
+          <div class="reg-lookup__loading" data-reg-lookup-loading hidden>
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Looking up registration…
+          </div>
+          <div class="reg-lookup__error" data-reg-lookup-error hidden></div>
+          <div class="reg-lookup__content" data-reg-lookup-content hidden>
+            <div class="reg-lookup__detail-grid">
+              <div class="reg-lookup__photo-col" data-reg-lookup-photo-col>
+                <img class="reg-lookup__photo" data-reg-lookup-photo src="" alt="" loading="lazy">
+              </div>
+              <div class="reg-lookup__info-col">
+                <dl class="reg-lookup__details" data-reg-lookup-details></dl>
+              </div>
+            </div>
+            <div class="reg-lookup__section" data-reg-lookup-flights-section>
+              <h3 data-reg-lookup-flights-title>Your flights</h3>
+              <div class="table-scroll">
+                <table class="mini-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Origin</th>
+                      <th>Destination</th>
+                      <th>Flight</th>
+                      <th>Distance</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody data-reg-lookup-flights-body></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="reg-lookup__section" data-reg-lookup-history-section>
+              <h3 data-reg-lookup-history-title>Flight history</h3>
+              <div class="table-scroll">
+                <table class="mini-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Flight</th>
+                      <th>From</th>
+                      <th>To</th>
+                      <th>Airline</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody data-reg-lookup-history-body></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="scan-modal" data-scan-modal hidden>
+      <div class="scan-modal__backdrop" data-scan-close></div>
+      <div class="scan-modal__content" role="dialog" aria-modal="true" aria-labelledby="scan-title">
+        <div class="scan-modal__header">
+          <h2 id="scan-title"><i class="fa-solid fa-camera" aria-hidden="true"></i> Scan registration</h2>
+          <button class="button ghost modal__close" type="button" data-scan-close aria-label="Close">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="scan-modal__body">
+          <div class="scan-capture-buttons" data-scan-buttons>
+            <button type="button" class="button scan-capture-btn" data-scan-camera>
+              <i class="fa-solid fa-camera" aria-hidden="true"></i> Take photo
+            </button>
+            <button type="button" class="button ghost scan-capture-btn" data-scan-gallery>
+              <i class="fa-solid fa-images" aria-hidden="true"></i> Choose photo
+            </button>
+          </div>
+          <input type="file" accept="image/*" capture="environment" data-scan-camera-input hidden>
+          <input type="file" accept="image/*" data-scan-gallery-input hidden>
+          <div class="scan-preview" data-scan-preview hidden>
+            <img data-scan-preview-img src="" alt="Captured aircraft photo">
+          </div>
+          <div class="scan-actions" data-scan-actions hidden>
+            <button type="button" class="button" data-scan-submit>
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Read registration
+            </button>
+            <button type="button" class="button ghost" data-scan-retake>Retake</button>
+          </div>
+          <div class="scan-loading" data-scan-loading hidden>
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Reading registration with Gemini…
+          </div>
+          <div class="scan-result" data-scan-result hidden>
+            <div class="scan-result__reg" data-scan-result-reg></div>
+            <div class="scan-result__meta" data-scan-result-meta></div>
+            <div class="scan-result__actions">
+              <button type="button" class="button" data-scan-lookup>Look up aircraft</button>
+              <button type="button" class="button ghost" data-scan-another>Scan another</button>
+            </div>
+          </div>
+          <div class="scan-error" data-scan-error hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <span class="site-footer__brand">
+          <i class="fa-solid fa-plane" aria-hidden="true"></i> {{ app_name }}
+        </span>
+        <span class="site-footer__version">v{{ app_version }}</span>
+        <div class="plane-control" data-plane-control title="Background planes">
+          <button type="button" class="plane-control__btn" data-plane-minus title="Fewer planes" aria-label="Fewer planes">
+            <i class="fa-solid fa-minus" aria-hidden="true"></i>
+          </button>
+          <span class="plane-control__count" data-plane-count>5</span>
+          <i class="fa-solid fa-plane plane-control__icon" aria-hidden="true"></i>
+          <button type="button" class="plane-control__btn" data-plane-plus title="More planes" aria-label="More planes">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      window.appName = {{ app_name | tojson }};
+      window.homeCity = {{ home_city | tojson }};
+      window.homeCountry = {{ home_country | tojson }};
+      window.airportDataUrl = "{{ url_for('static', filename='airports.dat') }}";
+      window.searchApiUrl = "{{ url_for('main.api_search') }}";
+      window.aircraftLookupUrlBase = "{{ url_for('main.api_aircraft_lookup', registration='__REG__') }}";
+      window.flightEditUrlBase = "{{ url_for('main.flight_edit', flight_id=0) }}";
+      window.scanRegistrationUrl = "{{ url_for('main.api_scan_registration') }}";
+      window.refreshTodayHistoryUrl = "{{ url_for('main.api_refresh_today_history') }}";
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block page_title %}Trips{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Data</p>
+      <h1 class="page-header__title">Trips</h1>
+      <p class="page-header__lead"><strong>{{ trips|length }}</strong> trip{{ "" if trips|length == 1 else "s" }}, each a chain of flight, rail, road or sea legs.</p>
+    </div>
+    <div class="page-header__actions">
+      <a class="button" href="{{ url_for('main.trip_new') }}">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add trip
+      </a>
+    </div>
+  </header>
+  <section class="panel">
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Trip</th>
+          <th>Trip ID</th>
+          <th>Type</th>
+          <th>Start</th>
+          <th>Legs</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for trip in trips %}
+          <tr>
+            <td class="cell-main">{{ trip.name or "Untitled trip" }}</td>
+            <td class="mono">{{ trip.trip_code or "-" }}</td>
+            <td>{{ trip.trip_type or "-" }}</td>
+            <td>{{ trip_display_date(trip) }}</td>
+            <td>{{ trip.legs | length }}</td>
+            <td class="actions">
+              <a class="button ghost" href="{{ url_for('main.trip_detail', trip_id=trip.id) }}">
+                View
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not trips %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="fa-solid fa-suitcase-rolling empty-state__icon" aria-hidden="true"></i>
+                <h3 class="empty-state__title">No trips yet</h3>
+                <p class="empty-state__text">Group flights into trips to see them together on the timeline.</p>
+                <div class="empty-state__actions">
+                  <a class="button" href="{{ url_for('main.trip_new') }}">Add trip</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>{{ audit_title | default("Duplicate Audit") }}</h2>
+        <div class="panel-meta">
+          {{ duplicate_groups }} duplicate groups · {{ total_groups }} total groups · {{ total_flights }} flights
+        </div>
+        {% if audit_toggle_label is not none %}
+          <label class="audit-toggle">
+            <input type="checkbox" class="audit-toggle__input" data-audit-group-toggle checked>
+            <span class="audit-toggle__track" aria-hidden="true">
+              <span class="audit-toggle__thumb"></span>
+            </span>
+            <span class="audit-toggle__label">
+              {{ audit_toggle_label | default("Hide grouped duplicates (default)") }}
+            </span>
+          </label>
+        {% endif %}
+      </div>
+    </div>
+    {% if audit_description is not none %}
+      <p class="muted">
+        {{ audit_description | default("Groups are suggested using weighted signals (date, flight number, route, city, and trip details).") }}
+      </p>
+    {% endif %}
+  </section>
+
+  {% if groups %}
+    {% for group in groups %}
+      {% set primary = group.primary %}
+          {% set grouped_id = primary.grouping_id %}
+          {% set is_suggested = not grouped_id and group.match_score %}
+      <section
+        class="panel{% if grouped_id %} panel--grouped{% endif %}"
+        data-audit-group-panel
+        data-grouping-id="{{ grouped_id or '' }}"
+      >
+        <div class="panel-header">
+          <div>
+            <h3>Group {{ loop.index }} ({{ group.count }} flights)</h3>
+            <div class="panel-meta">
+              {% if group.summary_label %}
+                {{ group.summary_label }}
+              {% elif group.key[0] == "by-number" %}
+                {{ primary.start_date }} · {{ primary.airline_code or "-" }} {{ primary.flight_number or "-" }}
+              {% else %}
+                {{ primary.start_date }} · {{ primary.origin_name }} → {{ primary.destination_name }}
+              {% endif %}
+            </div>
+            <div
+              class="panel-meta panel-meta--grouped"
+              data-audit-group-label
+              {% if not grouped_id %}hidden{% endif %}
+            >
+              Grouped: <span data-audit-group-id>{{ grouped_id }}</span>
+            </div>
+            {% if is_suggested %}
+              <div class="panel-meta panel-meta--suggested">
+                Suggested grouping · score {{ group.match_score }} / {{ match_threshold }}
+              </div>
+            {% endif %}
+            {% if show_match_reasons and group.match_reasons %}
+              <div class="panel-meta panel-meta--suggested">
+                Matched on: {{ group.match_reasons | join(", ") }}
+              </div>
+            {% endif %}
+            {% set same_date_trips = trips_by_date.get(primary.start_date, []) %}
+            {% if same_date_trips %}
+              <div class="panel-meta">
+                Trips on date: {{ same_date_trips | join(", ") }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="button-group">
+            <form
+              method="post"
+              action="{% if grouped_id %}{{ url_for('main.audit_ungroup') }}{% else %}{{ url_for('main.audit_confirm_grouping') }}{% endif %}"
+              data-audit-group-form
+            >
+              <input
+                type="hidden"
+                name="selected_ids"
+                value="{{ group.flights | map(attribute='id') | join(',') }}"
+              >
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button
+                type="submit"
+                class="button ghost"
+                data-audit-group-button
+                data-confirm-url="{{ url_for('main.audit_confirm_grouping') }}"
+                data-ungroup-url="{{ url_for('main.audit_ungroup') }}"
+                data-label-confirm="Confirm grouping"
+                data-label-ungroup="Ungroup"
+              >
+                {{ "Ungroup" if grouped_id else "Confirm grouping" }}
+              </button>
+            </form>
+            {% if is_suggested %}
+              <form method="post" action="{{ url_for('main.audit_ignore_grouping') }}">
+                <input
+                  type="hidden"
+                  name="selected_ids"
+                  value="{{ group.flights | map(attribute='id') | join(',') }}"
+                >
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="button ghost">Ignore grouping</button>
+              </form>
+            {% endif %}
+            <button
+              type="button"
+              class="button ghost"
+              data-audit-merge-button
+              data-merge-ids="{{ group.flights | map(attribute='id') | join(',') }}"
+            >
+              Merge group
+            </button>
+          </div>
+        </div>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Start Date</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Airline Code</th>
+              <th>Flight #</th>
+              <th>Service Class</th>
+              <th>Trip</th>
+              <th>Trip ID</th>
+              <th>Supplier Conf</th>
+              <th>Activity ID</th>
+              <th>Source</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for flight in group.flights %}
+              <tr>
+                <td>{{ flight.id }}</td>
+                <td>{{ flight.start_date }}</td>
+                <td>{{ flight.origin_name }}</td>
+                <td>{{ flight.destination_name }}</td>
+                <td>{{ flight.airline_code or "-" }}</td>
+                <td>{{ flight.flight_number or "-" }}</td>
+                <td>{{ flight.service_class or "-" }}</td>
+                <td>{{ flight.trip_name or "-" }}</td>
+                <td>{{ flight.trip_id or "-" }}</td>
+                <td>{{ flight.supplier_confirmation or "-" }}</td>
+                <td>{{ flight.activity_id or "-" }}</td>
+                <td>{{ flight.source_file or "-" }}</td>
+                <td class="actions">
+                  <a
+                    class="button ghost"
+                    href="{{ url_for('main.flight_edit', flight_id=flight.id, next=request.path) }}"
+                  >
+                    Edit
+                  </a>
+                  <form method="post" action="{{ url_for('main.flight_delete', flight_id=flight.id) }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="button danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endfor %}
+  {% else %}
+    <section class="panel">
+      <p>No duplicate groups found.</p>
+    </section>
+  {% endif %}
+
+  <section class="modal" data-audit-merge-modal hidden>
+    <div class="modal__backdrop" data-audit-merge-cancel></div>
+    <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="audit-merge-title">
+      <div class="modal__header">
+        <div>
+          <h3 id="audit-merge-title">Confirm merge</h3>
+          <p class="muted" data-audit-merge-summary></p>
+        </div>
+        <button type="button" class="button ghost" data-audit-merge-cancel>
+          Cancel
+        </button>
+      </div>
+      <div class="modal__body">
+        <div class="merge-preview__card">
+          <h4>Primary record</h4>
+          <div class="merge-preview__options" data-audit-merge-options></div>
+        </div>
+        <div class="merge-preview__card">
+          <h4>Merged record</h4>
+          <dl class="merge-preview__fields" data-audit-merge-fields></dl>
+        </div>
+      </div>
+      <form
+        method="post"
+        action="{{ url_for('main.flight_merge') }}"
+        class="modal__actions"
+        data-audit-merge-form
+      >
+        <input type="hidden" name="primary_id" data-audit-merge-primary>
+        <input type="hidden" name="selected_ids" data-audit-merge-selected>
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="button" data-audit-merge-confirm>
+          Confirm merge
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <script>
+    window.auditFlights = {{ flights_json|safe }};
+  </script>
+{% endblock %}

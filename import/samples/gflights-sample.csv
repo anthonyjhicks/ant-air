@@ -1,0 +1,8 @@
+Trip Name,Flight Type,Flight Date (dd/mm/yyyy),Origin,Origin City,Origin Country,Destination,City,Country,Booking Site,Traveller
+Barcelona city break,Air,2023-10-13,LGW,London,United Kingdom,BCN,Barcelona,Spain,gflights,SAM RIVERS
+Barcelona city break,Air,2023-10-16,BCN,Barcelona,Spain,LGW,London,United Kingdom,gflights,SAM RIVERS
+Dublin day trip,Air,2023-11-24,LCY,London,United Kingdom,DUB,Dublin,Ireland,gflights,SAM RIVERS
+Dublin day trip,Air,2023-11-24,DUB,Dublin,Ireland,LCY,London,United Kingdom,gflights,SAM RIVERS
+Singapore stopover,Air,2025-02-07,LHR,London,United Kingdom,SIN,Singapore,Singapore,gflights,SAM RIVERS
+Singapore stopover,Air,2025-02-09,SIN,Singapore,Singapore,SYD,Sydney,Australia,gflights,SAM RIVERS
+Singapore stopover,Air,2025-02-21,SYD,Sydney,Australia,LHR,London,United Kingdom,gflights,SAM RIVERS

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Gemini Guess Audit</h2>
+        <div class="panel-meta">
+          {{ total }} records updated with Gemini guesses
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    {% if entries %}
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>History</th>
+            <th>Flight</th>
+            <th>Date</th>
+            <th>Route</th>
+            <th>Airline</th>
+            <th>Flight #</th>
+            <th>Aircraft</th>
+            <th>Guess</th>
+            <th>Scope</th>
+            <th>Applied</th>
+            <th>Reasoning</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr>
+              <td>{{ entry.history.id }}</td>
+              <td>{{ entry.flight.id if entry.flight else "-" }}</td>
+              <td>{{ entry.flight_date or "-" }}</td>
+              <td>{{ entry.route_label }}</td>
+              <td>{{ entry.flight.airline_code if entry.flight else "-" }}</td>
+              <td>{{ entry.flight.flight_number if entry.flight else "-" }}</td>
+              <td>{{ entry.flight.aircraft if entry.flight else "-" }}</td>
+              <td>{{ entry.history.aircraft_type or "-" }}</td>
+              <td>{{ entry.scope or "-" }}</td>
+              <td>
+                {% if entry.applied_fields %}
+                  {{ entry.applied_fields | join(", ") }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {% if entry.reasoning %}
+                  <details>
+                    <summary>View</summary>
+                    <pre>{{ entry.reasoning }}</pre>
+                  </details>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="actions">
+                {% if entry.flight %}
+                  <a
+                    class="button ghost"
+                    href="{{ url_for('main.flight_edit', flight_id=entry.flight.id, next=request.path) }}"
+                  >
+                    Edit
+                  </a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No Gemini guess updates found.</p>
+    {% endif %}
+  </section>
+{% endblock %}

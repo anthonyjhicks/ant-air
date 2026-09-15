@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+{% macro value_or_empty(value) -%}
+  {{ "" if value is none else value }}
+{%- endmacro %}
+{% block page_title %}{{ "Edit flight" if flight else "Add flight" }}{% endblock %}
+{% block content %}
+  {% set form_flight = flight or prefill %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Flights</p>
+      <h1 class="page-header__title">
+        {% if flight %}
+          Edit flight
+          {% if flight.airline_code or flight.flight_number %}
+            <span class="mono">{{ flight.airline_code or "" }}{{ flight.flight_number or "" }}</span>
+          {% endif %}
+        {% else %}
+          Add flight
+        {% endif %}
+      </h1>
+      {% if flight %}
+        <p class="page-header__lead">{{ flight.start_date or "" }} &middot; {{ flight.origin_name or "?" }} → {{ flight.destination_name or "?" }}</p>
+      {% else %}
+        <p class="page-header__lead">Only the route and date are required. Airport codes fill in cities, countries and coordinates.</p>
+      {% endif %}
+    </div>
+    <div class="page-header__actions">
+      <a class="button ghost" href="{{ next_url or url_for('main.flight_list') }}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back
+      </a>
+    </div>
+  </header>
+  <section class="panel">
+    {% if flight and group_members and group_members|length > 1 %}
+      <div class="flash flash-warning" data-group-notice>
+        This is one of {{ group_members|length }} records of the same flight.
+        {% if flight.id == group_primary_id %}
+          It is the primary record: dashboards, statistics, the API and the MCP server report this one.
+        {% else %}
+          Dashboards, statistics, the API and the MCP server report
+          <a href="{{ url_for('main.flight_edit', flight_id=group_primary_id) }}">record #{{ group_primary_id }}</a>
+          (the newest) instead of this one.
+        {% endif %}
+        Other records:
+        {% for member in group_members if member.id != flight.id %}
+          <a href="{{ url_for('main.flight_edit', flight_id=member.id) }}">#{{ member.id }}</a>
+          ({{ member.start_date }}{% if member.source_file %}, {{ member.source_file }}{% endif %}){% if not loop.last %},{% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+    <form method="post">
+      {% if next_url %}
+        <input type="hidden" name="next" value="{{ next_url }}">
+      {% endif %}
+      <h3>Trip Details</h3>
+      <div class="form-grid">
+        <label>
+          Trip Name
+          <input type="text" name="trip_name" value="{{ value_or_empty(form_flight.trip_name if form_flight else none) }}">
+        </label>
+        <label>
+          Trip ID
+          <input type="text" name="trip_id" value="{{ value_or_empty(form_flight.trip_id if form_flight else none) }}">
+        </label>
+        <label>
+          Trip Type
+          <input type="text" name="trip_type" value="{{ value_or_empty(form_flight.trip_type if form_flight else none) }}">
+        </label>
+        {% if flight and flight.trip_leg %}
+          <label>
+            Linked Trip
+            <div class="static-field">
+              {% if flight.trip_leg.trip %}
+                <a href="{{ url_for('main.trip_detail', trip_id=flight.trip_leg.trip.id) }}">
+                  {{ flight.trip_leg.trip.name or ("Trip " ~ flight.trip_leg.trip.id) }}
+                </a>
+              {% else %}
+                Trip leg #{{ flight.trip_leg.id }}
+              {% endif %}
+            </div>
+          </label>
+        {% endif %}
+        <label>
+          Activity ID
+          <input type="text" name="activity_id" value="{{ value_or_empty(form_flight.activity_id if form_flight else none) }}">
+        </label>
+        <label>
+          Activity Cost
+          <input type="text" name="activity_cost" value="{{ value_or_empty(form_flight.activity_cost if form_flight else none) }}">
+        </label>
+        <label>
+          Booking URL
+          <input type="text" name="url" value="{{ value_or_empty(form_flight.url if form_flight else none) }}">
+        </label>
+        <label>
+          Booking Site
+          <input type="text" name="booking_site" value="{{ value_or_empty(form_flight.booking_site if form_flight else none) }}">
+        </label>
+        <label>
+          Supplier Confirmation
+          <input type="text" name="supplier_confirmation" value="{{ value_or_empty(form_flight.supplier_confirmation if form_flight else none) }}">
+        </label>
+        <label>
+          Booking Date
+          <input type="date" name="booking_date" value="{{ value_or_empty(form_flight.booking_date if form_flight else none) }}">
+        </label>
+        <label>
+          Booking Site Phone
+          <input type="text" name="booking_site_phone" value="{{ value_or_empty(form_flight.booking_site_phone if form_flight else none) }}">
+        </label>
+        <label>
+          Traveller
+          <input type="text" name="traveller" value="{{ value_or_empty(form_flight.traveller if form_flight else none) }}">
+        </label>
+        <label>
+          Ticket Number
+          <input type="text" name="ticket_number" value="{{ value_or_empty(form_flight.ticket_number if form_flight else none) }}">
+        </label>
+      </div>
+
+      <h3>Flight Details</h3>
+      <div class="form-grid">
+        <label>
+          Airline Code
+          <input type="text" name="airline_code" value="{{ value_or_empty(form_flight.airline_code if form_flight else none) }}">
+        </label>
+        <label>
+          Operating Airline Code
+          <input type="text" name="operating_airline_code" value="{{ value_or_empty(form_flight.operating_airline_code if form_flight else none) }}">
+        </label>
+        <label>
+          Flight Number
+          <input type="text" name="flight_number" value="{{ value_or_empty(form_flight.flight_number if form_flight else none) }}">
+        </label>
+        <label>
+          Operating Flight Number
+          <input type="text" name="operating_flight_number" value="{{ value_or_empty(form_flight.operating_flight_number if form_flight else none) }}">
+        </label>
+        <label>
+          Service Class
+          <input type="text" name="service_class" value="{{ value_or_empty(form_flight.service_class if form_flight else none) }}">
+        </label>
+        <label>
+          Aircraft
+          <input type="text" name="aircraft" value="{{ value_or_empty(form_flight.aircraft if form_flight else none) }}">
+        </label>
+        <label>
+          Aircraft Registration
+          <input type="text" name="aircraft_registration" value="{{ value_or_empty(form_flight.aircraft_registration if form_flight else none) }}">
+        </label>
+        <label>
+          Stops
+          <input type="number" name="stops" value="{{ value_or_empty(form_flight.stops if form_flight else none) }}">
+        </label>
+        <label>
+          Distance (miles)
+          <input type="text" name="distance" value="{{ value_or_empty(form_flight.distance if form_flight else none) }}">
+        </label>
+      </div>
+      {% if flight %}
+        <div class="form-actions">
+          <button
+            type="button"
+            class="button ghost"
+            data-gemini-lookup
+            data-gemini-url="{{ url_for('main.gemini_codeshare_lookup', flight_id=flight.id) }}"
+            data-gemini-record-url="{{ url_for('main.gemini_codeshare_record', flight_id=flight.id) }}"
+          >
+            Gemini codeshare lookup
+          </button>
+          <label class="hint">
+            <input type="checkbox" data-gemini-overwrite checked>
+            Overwrite existing operating/aircraft fields
+          </label>
+        </div>
+        <p class="muted" data-gemini-status hidden></p>
+        <section class="modal" data-gemini-modal hidden>
+          <div class="modal__backdrop" data-gemini-close></div>
+          <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="gemini-title">
+            <div class="modal__header">
+              <div>
+                <h3 id="gemini-title">Gemini request/response</h3>
+                <p class="muted">Latest codeshare lookup details.</p>
+              </div>
+              <button type="button" class="button ghost" data-gemini-close>
+                Close
+              </button>
+            </div>
+            <div class="modal__body">
+              <div class="merge-preview__card">
+                <h4>Request</h4>
+                <pre class="code-block" data-gemini-request></pre>
+              </div>
+              <div class="merge-preview__card">
+                <h4>Response</h4>
+                <pre class="code-block" data-gemini-response></pre>
+              </div>
+            </div>
+            <div class="modal__actions">
+              <button type="button" class="button ghost" data-gemini-close>
+                Close
+              </button>
+            </div>
+          </div>
+        </section>
+      {% endif %}
+
+      <h3>Start</h3>
+      <div class="form-grid">
+        <label>
+          Start Date
+          <input type="date" name="start_date" value="{{ value_or_empty(form_flight.start_date if form_flight else none) }}" required>
+        </label>
+        <label>
+          Start Time
+          <input
+            type="time"
+            name="start_time"
+            value="{{ form_flight.start_time.strftime('%H:%M') if form_flight and form_flight.start_time else '' }}"
+          >
+        </label>
+        <label>
+          Start Country
+          <input type="text" name="start_country" value="{{ value_or_empty(form_flight.start_country if form_flight else none) }}">
+        </label>
+        <label>
+          Start City
+          <input type="text" name="start_city_name" value="{{ value_or_empty(form_flight.start_city_name if form_flight else none) }}">
+        </label>
+        <label>
+          Start Airport
+          <input
+            type="text"
+            name="start_airport"
+            value="{{ value_or_empty(form_flight.start_airport if form_flight else none) }}"
+            data-airport-lookup
+            data-airport-city-field="start_city_name"
+            data-airport-country-field="start_country"
+          >
+        </label>
+        <label>
+          Start Terminal
+          <input type="text" name="start_terminal" value="{{ value_or_empty(form_flight.start_terminal if form_flight else none) }}">
+        </label>
+        <label>
+          Start Latitude
+          <input type="text" name="start_lat" value="{{ value_or_empty(form_flight.start_lat if form_flight else none) }}">
+        </label>
+        <label>
+          Start Longitude
+          <input type="text" name="start_long" value="{{ value_or_empty(form_flight.start_long if form_flight else none) }}">
+        </label>
+      </div>
+
+      <h3>End</h3>
+      <div class="form-grid">
+        <label>
+          End Date
+          <input type="date" name="end_date" value="{{ value_or_empty(form_flight.end_date if form_flight else none) }}">
+        </label>
+        <label>
+          End Time
+          <input
+            type="time"
+            name="end_time"
+            value="{{ form_flight.end_time.strftime('%H:%M') if form_flight and form_flight.end_time else '' }}"
+          >
+        </label>
+        <label>
+          End Country
+          <input type="text" name="end_country" value="{{ value_or_empty(form_flight.end_country if form_flight else none) }}">
+        </label>
+        <label>
+          End City
+          <input type="text" name="end_city_name" value="{{ value_or_empty(form_flight.end_city_name if form_flight else none) }}">
+        </label>
+        <label>
+          End Airport
+          <input
+            type="text"
+            name="end_airport"
+            value="{{ value_or_empty(form_flight.end_airport if form_flight else none) }}"
+            data-airport-lookup
+            data-airport-city-field="end_city_name"
+            data-airport-country-field="end_country"
+          >
+        </label>
+        <label>
+          End Terminal
+          <input type="text" name="end_terminal" value="{{ value_or_empty(form_flight.end_terminal if form_flight else none) }}">
+        </label>
+        <label>
+          End Latitude
+          <input type="text" name="end_lat" value="{{ value_or_empty(form_flight.end_lat if form_flight else none) }}">
+        </label>
+        <label>
+          End Longitude
+          <input type="text" name="end_long" value="{{ value_or_empty(form_flight.end_long if form_flight else none) }}">
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="button">Save</button>
+        <a class="button ghost" href="{{ next_url or url_for('main.flight_list') }}">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </section>
+  {% if flight %}
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Flight History</h2>
+          <div class="panel-meta">
+            {{ airnav_histories | length }} history record{{ "" if (airnav_histories | length) == 1 else "s" }}
+          </div>
+        </div>
+        <div class="button-group">
+          <button
+            type="button"
+            class="button ghost"
+            data-flight-history-refresh
+            data-flight-history-url="{{ url_for('main.flightaware_history', flight_id=flight.id) }}"
+            data-flight-history-reload="true"
+          >
+            Refresh from FlightAware
+          </button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Created</th>
+            <th>Status</th>
+            <th>Departure</th>
+            <th>Arrival</th>
+            <th>Flight</th>
+            <th>Aircraft</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for history in airnav_histories %}
+            <tr>
+              <td>{{ history.created_at }}</td>
+              <td>{{ history.status or "-" }}</td>
+              <td>
+                {{ history.dep_airport_iata or "-" }}
+                {% if history.scheduled_departure %}
+                  · {{ history.scheduled_departure }}
+                {% endif %}
+              </td>
+              <td>
+                {{ history.arr_airport_iata or "-" }}
+                {% if history.scheduled_arrival %}
+                  · {{ history.scheduled_arrival }}
+                {% endif %}
+              </td>
+              <td>{{ history.flight_number_iata or history.flight_number_icao or "-" }}</td>
+              <td>{{ history.aircraft_type or history.aircraft_registration or "-" }}</td>
+              <td class="actions">
+                <a class="button ghost" href="{{ url_for('main.flight_history_record_view', history_id=history.id) }}">
+                  View
+                </a>
+                <form
+                  method="post"
+                  action="{{ url_for('main.flight_history_record_delete', history_id=history.id) }}"
+                  data-history-delete
+                >
+                  <input type="hidden" name="next" value="{{ request.path }}">
+                  <button type="submit" class="button danger" aria-label="Delete history entry" title="Delete">
+                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                    <span class="sr-only">Delete</span>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% set raw_payload = history.raw_payload if history.raw_payload is mapping else {} %}
+            {% set details = raw_payload.get("details") if raw_payload else {} %}
+            {% set gemini_reasoning = raw_payload.get("reasoning") if raw_payload else none %}
+            {% set gemini_confidence = raw_payload.get("registration_confidence") if raw_payload else none %}
+            {% if gemini_confidence is none and details %}
+              {% set gemini_confidence = details.get("registration_confidence") or details.get("confidence") %}
+            {% endif %}
+            <tr>
+              <td colspan="7">
+                <div class="muted">
+                  <strong>Gemini confidence:</strong>
+                  {% if gemini_confidence is not none %}
+                    {{ (gemini_confidence | float * 100) | round(1) }}%
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+                <div class="muted">
+                  <strong>Gemini reasoning:</strong>
+                  {% if gemini_reasoning %}
+                    <details>
+                      <summary>View reasoning</summary>
+                      <pre class="code-block">{{ gemini_reasoning }}</pre>
+                    </details>
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if not airnav_histories %}
+            <tr>
+              <td colspan="7">No history records yet.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </section>
+  {% endif %}
+{% endblock %}

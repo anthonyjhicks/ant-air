@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block page_title %}Timeline{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="page-header__eyebrow">Views</p>
+    <h1 class="page-header__title">Timeline</h1>
+    <p class="page-header__lead">Your flying in order, grouped by trip or one flight at a time.</p>
+  </div>
+  <div class="page-header__actions">
+    <div class="timeline-toggle" role="group" aria-label="Group by">
+      <button class="timeline-toggle__button {{ 'is-active' if group_by_trips else '' }}"
+              data-timeline-group="trips">By trips</button>
+      <button class="timeline-toggle__button {{ 'is-active' if not group_by_trips else '' }}"
+              data-timeline-group="flights">Individual flights</button>
+    </div>
+    <div class="timeline-toggle" role="group" aria-label="Sort order">
+      <button class="timeline-toggle__button {{ 'is-active' if sort_order == 'asc' else '' }}"
+              data-timeline-sort="asc">Oldest first</button>
+      <button class="timeline-toggle__button {{ 'is-active' if sort_order == 'desc' else '' }}"
+              data-timeline-sort="desc">Newest first</button>
+    </div>
+  </div>
+</header>
+
+{% if timeline_items %}
+<div class="timeline">
+  {% for item in timeline_items %}
+    {% if item.type == 'trip' %}
+      <article class="timeline-item timeline-item--trip" data-timeline-trip>
+        <div class="timeline-item__header" data-timeline-trip-header>
+          <div class="timeline-node timeline-node--trip"></div>
+          <div class="timeline-item__content">
+            <h3>{{ item.trip.name }}</h3>
+            <div class="timeline-meta">
+              <span>{{ item.trip.start_date.strftime('%b %d, %Y') if item.trip.start_date }}</span>
+              <span>{{ item.flights|length }} flight{{ 's' if item.flights|length > 1 else '' }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-item__legs">
+          {% for flight in item.flights %}
+            {% include 'timeline_flight_card.html' %}
+          {% endfor %}
+        </div>
+      </article>
+    {% else %}
+      <article class="timeline-item timeline-item--flight" data-timeline-item data-airline="{{ item.flight.airline_code }}">
+        <div class="timeline-node"></div>
+        {% set flight = item.flight %}
+        {% include 'timeline_flight_card.html' %}
+      </article>
+    {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel">
+  <div class="empty-state">
+    <i class="fa-solid fa-timeline empty-state__icon" aria-hidden="true"></i>
+    <h3 class="empty-state__title">Nothing on the timeline yet</h3>
+    <p class="empty-state__text">Add some flights and they will line up here in date order.</p>
+    <div class="empty-state__actions">
+      <a class="button" href="{{ url_for('main.flight_new') }}">Add flight</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% include 'aircraft_lightbox_modal.html' %}
+{% endblock %}

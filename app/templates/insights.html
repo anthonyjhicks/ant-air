@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block page_title %}AI Insights{% endblock %}
+{% block content %}
+<div data-insights-page>
+
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Views</p>
+      <h1 class="page-header__title">AI Insights</h1>
+      <p class="page-header__lead">Gemini reads your whole flight history and writes up the patterns, records and oddities in it.</p>
+    </div>
+    <div class="page-header__actions">
+      <button type="button" class="btn" data-insights-generate>
+        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+        <span data-insights-generate-label>{{ 'Regenerate' if insights else 'Generate insights' }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Loading state -->
+  <div class="insights-loading" data-insights-loading hidden>
+    <div class="insights-loading__content">
+      <div class="insights-loading__spinner">
+        <i class="fa-solid fa-wand-magic-sparkles fa-2x"></i>
+      </div>
+      <h3 data-insights-loading-title>Preparing your flight data...</h3>
+      <div class="insights-loading__steps">
+        <div class="insights-loading__step is-active" data-step="0">
+          <i class="fa-solid fa-database"></i> Aggregating {{ stats.total_flights }} flights
+        </div>
+        <div class="insights-loading__step" data-step="1">
+          <i class="fa-solid fa-paper-plane"></i> Sending to AI for analysis
+        </div>
+        <div class="insights-loading__step" data-step="2">
+          <i class="fa-solid fa-brain"></i> Analysing patterns and trends
+        </div>
+        <div class="insights-loading__step" data-step="3">
+          <i class="fa-solid fa-chart-line"></i> Generating personalised insights
+        </div>
+      </div>
+      <div class="insights-loading__progress">
+        <div class="insights-loading__progress-bar" data-insights-progress-bar></div>
+      </div>
+      <p class="text-muted insights-loading__elapsed" data-insights-elapsed></p>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="insights-error" data-insights-error hidden>
+    <div class="panel">
+      <div class="insights-empty__content">
+        <i class="fa-solid fa-triangle-exclamation empty-state__icon" aria-hidden="true"></i>
+        <h3>Something went wrong</h3>
+        <p class="text-muted" data-insights-error-message></p>
+        <button type="button" class="btn" data-insights-generate>Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div data-insights-empty {{ '' if not insights else 'hidden' }}>
+    <div class="panel">
+      <div class="insights-empty__content">
+        <i class="fa-solid fa-wand-magic-sparkles empty-state__icon" aria-hidden="true"></i>
+        <h3>Discover your travel patterns</h3>
+        <p class="text-muted">Let AI analyse your {{ stats.total_flights }} flights to uncover hidden patterns, fun records, and personalised insights about your travel history.</p>
+        <button type="button" class="btn" data-insights-generate>Generate Insights</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights content (rendered by JS) -->
+  <div data-insights-content hidden>
+
+    <!-- Hero: Travel Personality -->
+    <section class="insights-hero" data-insights-personality>
+      <div class="insights-hero__sparkle"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Analysis</div>
+      <h2 class="insights-hero__title" data-insights-personality-title></h2>
+      <p class="insights-hero__subtitle" data-insights-personality-subtitle></p>
+      <p class="insights-hero__description" data-insights-personality-description></p>
+      <div class="insights-hero__traits" data-insights-personality-traits></div>
+    </section>
+
+    <!-- Quick stats -->
+    <section class="summary-grid summary-grid--4" data-insights-quick-stats>
+    </section>
+
+    <!-- Geographic Insights -->
+    <section class="panel" data-insights-section="geographic">
+      <h3 class="panel-section-title"><i class="fa-solid fa-earth-americas"></i> Geographic Insights</h3>
+      <div class="insights-grid" data-insights-cards="geographic"></div>
+      <div class="insights-sub-section" data-insights-map-completion></div>
+      <div class="insights-sub-section" data-insights-missing-destinations></div>
+    </section>
+
+    <!-- Aircraft & Aviation -->
+    <section class="panel" data-insights-section="aircraft">
+      <h3 class="panel-section-title"><i class="fa-solid fa-plane-circle-check"></i> Aircraft & Aviation</h3>
+      <div class="insights-grid" data-insights-cards="aircraft"></div>
+      <div class="insights-scores" data-insights-aircraft-scores></div>
+    </section>
+
+    <!-- Airline Analysis -->
+    <section class="panel" data-insights-section="airline">
+      <h3 class="panel-section-title"><i class="fa-solid fa-ticket"></i> Airline Analysis</h3>
+      <div class="insights-grid" data-insights-cards="airline"></div>
+      <div class="insights-scores" data-insights-airline-scores></div>
+    </section>
+
+    <!-- Temporal Patterns -->
+    <section class="panel" data-insights-section="temporal">
+      <h3 class="panel-section-title"><i class="fa-solid fa-clock"></i> Temporal Patterns</h3>
+      <div class="insights-grid" data-insights-cards="temporal"></div>
+    </section>
+
+    <!-- Records & Superlatives -->
+    <section class="panel" data-insights-section="superlatives">
+      <h3 class="panel-section-title"><i class="fa-solid fa-trophy"></i> Records & Superlatives</h3>
+      <div class="insights-grid" data-insights-superlatives></div>
+    </section>
+
+    <!-- Fun Comparisons -->
+    <section class="panel" data-insights-section="comparisons">
+      <h3 class="panel-section-title"><i class="fa-solid fa-scale-balanced"></i> Fun Comparisons</h3>
+      <div class="insights-comparisons" data-insights-comparisons></div>
+    </section>
+
+    <!-- Predictions -->
+    <section class="panel" data-insights-section="predictions">
+      <h3 class="panel-section-title"><i class="fa-solid fa-crystal-ball"></i> Predictions & Profile</h3>
+      <div class="insights-grid" data-insights-predictions></div>
+    </section>
+
+    <!-- Generated timestamp -->
+    <p class="text-muted text-center insights-timestamp" data-insights-timestamp></p>
+
+  </div>
+
+</div>
+
+<script>
+  window.insightsData = {{ insights_json|safe }};
+  window.insightsStale = {{ 'true' if is_stale else 'false' }};
+  window.insightsGeneratedAt = {{ generated_at|tojson }};
+</script>
+{% endblock %}

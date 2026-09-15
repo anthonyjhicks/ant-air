@@ -1,0 +1,697 @@
+{% extends "base.html" %}
+{% block main_class %} container--wide{% endblock %}
+{% block page_title %}Flights{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Data</p>
+      <h1 class="page-header__title">Flights</h1>
+      <p class="page-header__lead">
+        <strong>{{ flights|length }}</strong> approved flight record{{ "" if flights|length == 1 else "s" }}.
+        Filter, flag, merge and group duplicates from here.
+      </p>
+    </div>
+    <div class="page-header__actions">
+      <a class="button ghost" href="{{ url_for('main.inbox') }}">
+        <i class="fa-solid fa-inbox" aria-hidden="true"></i> Inbox
+      </a>
+      <a class="button" href="{{ url_for('main.flight_new') }}">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add flight
+      </a>
+    </div>
+  </header>
+  <section class="panel">
+    <div class="page-search-banner" data-page-search-banner>
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <span class="page-search-banner__text" data-page-search-text></span>
+      <button type="button" class="page-search-banner__clear" data-page-search-clear>Clear search</button>
+    </div>
+    <div class="traveller-toolbar">
+      <div class="traveller-card">
+        <span class="traveller-card__label">Traveller</span>
+        <span class="traveller-card__value" data-traveller-name>
+          All travellers
+        </span>
+        <span class="traveller-card__sub" data-traveller-count>
+          {{ flights|length }} flights
+        </span>
+      </div>
+      <div class="traveller-card">
+        <span class="traveller-card__label">Booking Site</span>
+        <span class="traveller-card__value" data-booking-site-name>
+          All booking sites
+        </span>
+        <span class="traveller-card__sub" data-booking-site-count>
+          {{ flights|length }} flights
+        </span>
+      </div>
+      <details class="panel panel--compact" data-flights-advanced-filter>
+        <summary>Advanced filters</summary>
+        <div class="chip-input chip-input--static">
+          <div class="chip-input__chips" data-chip-list></div>
+          <button
+            type="button"
+            class="button ghost chip-input__clear"
+            data-flights-filter-clear
+            disabled
+          >
+            Clear all
+          </button>
+        </div>
+        <div class="filter-fields">
+          <label class="filter-field">
+            <span>Aircraft type</span>
+            <input
+              type="text"
+              placeholder="Start typing an aircraft type..."
+              aria-label="Filter by aircraft type"
+              list="flights-aircraft-options"
+              data-advanced-filter-input
+              data-filter-type="aircraft"
+            >
+          </label>
+          <datalist id="flights-aircraft-options" data-filter-datalist="aircraft"></datalist>
+          <label class="filter-field">
+            <span>Traveller</span>
+            <input
+              type="text"
+              placeholder="Start typing a traveller..."
+              aria-label="Filter by traveller"
+              list="flights-traveller-options"
+              data-advanced-filter-input
+              data-filter-type="traveller"
+            >
+          </label>
+          <datalist id="flights-traveller-options" data-filter-datalist="traveller"></datalist>
+          <label class="filter-field">
+            <span>Airline</span>
+            <input
+              type="text"
+              placeholder="Start typing an airline..."
+              aria-label="Filter by airline"
+              list="flights-airline-options"
+              data-advanced-filter-input
+              data-filter-type="airline"
+            >
+          </label>
+          <datalist id="flights-airline-options" data-filter-datalist="airline"></datalist>
+          <label class="filter-field">
+            <span>Source</span>
+            <input
+              type="text"
+              placeholder="Start typing a source..."
+              aria-label="Filter by source"
+              list="flights-source-options"
+              data-advanced-filter-input
+              data-filter-type="source"
+            >
+          </label>
+          <datalist id="flights-source-options" data-filter-datalist="source"></datalist>
+          <label class="filter-field">
+            <span>Airports</span>
+            <input
+              type="text"
+              placeholder="Start typing an airport..."
+              aria-label="Filter by airport"
+              list="flights-airport-options"
+              data-advanced-filter-input
+              data-filter-type="airports"
+            >
+          </label>
+          <datalist id="flights-airport-options" data-filter-datalist="airports"></datalist>
+          <label class="filter-field">
+            <span>Country</span>
+            <input
+              type="text"
+              placeholder="Start typing a country..."
+              aria-label="Filter by country"
+              list="flights-country-options"
+              data-advanced-filter-input
+              data-filter-type="countries"
+            >
+          </label>
+          <datalist id="flights-country-options" data-filter-datalist="countries"></datalist>
+          <label class="filter-field">
+            <span>City</span>
+            <input
+              type="text"
+              placeholder="Start typing a city..."
+              aria-label="Filter by city"
+              list="flights-city-options"
+              data-advanced-filter-input
+              data-filter-type="cities"
+            >
+          </label>
+          <datalist id="flights-city-options" data-filter-datalist="cities"></datalist>
+          <label class="filter-field">
+            <span>Flight number</span>
+            <input
+              type="text"
+              placeholder="Start typing a flight number..."
+              aria-label="Filter by flight number"
+              list="flights-flight-number-options"
+              data-advanced-filter-input
+              data-filter-type="flight_number"
+            >
+          </label>
+          <datalist
+            id="flights-flight-number-options"
+            data-filter-datalist="flight_number"
+          ></datalist>
+          <label class="filter-field">
+            <span>Supplier confirmation</span>
+            <input
+              type="text"
+              placeholder="Start typing a confirmation..."
+              aria-label="Filter by supplier confirmation"
+              list="flights-supplier-confirmation-options"
+              data-advanced-filter-input
+              data-filter-type="supplier_confirmation"
+            >
+          </label>
+          <datalist
+            id="flights-supplier-confirmation-options"
+            data-filter-datalist="supplier_confirmation"
+          ></datalist>
+        </div>
+      </details>
+      <div class="filter-toggle">
+        <span class="filter-toggle__label">Show</span>
+        <label class="audit-toggle">
+          <input
+            type="checkbox"
+            class="audit-toggle__input"
+            data-missing-legs-toggle
+          >
+          <span class="audit-toggle__track" aria-hidden="true">
+            <span class="audit-toggle__thumb"></span>
+          </span>
+          <span class="audit-toggle__label">Missing legs</span>
+        </label>
+        <label class="audit-toggle">
+          <input
+            type="checkbox"
+            class="audit-toggle__input"
+            data-duplicates-toggle
+          >
+          <span class="audit-toggle__track" aria-hidden="true">
+            <span class="audit-toggle__thumb"></span>
+          </span>
+          <span class="audit-toggle__label">Duplicates</span>
+        </label>
+        <label class="audit-toggle">
+          <input
+            type="checkbox"
+            class="audit-toggle__input"
+            data-mismatch-toggle
+          >
+          <span class="audit-toggle__track" aria-hidden="true">
+            <span class="audit-toggle__thumb"></span>
+          </span>
+          <span class="audit-toggle__label">Mismatches</span>
+        </label>
+        <label class="audit-toggle">
+          <input
+            type="checkbox"
+            class="audit-toggle__input"
+            data-collapse-groups-toggle
+          >
+          <span class="audit-toggle__track" aria-hidden="true">
+            <span class="audit-toggle__thumb"></span>
+          </span>
+          <span class="audit-toggle__label">Collapse groups</span>
+        </label>
+      </div>
+    </div>
+    <div class="merge-toolbar" data-merge-toolbar>
+      <div>
+        <span class="merge-toolbar__label">Merge records</span>
+        <span class="merge-toolbar__count" data-merge-count>
+          0 selected
+        </span>
+      </div>
+      <div class="button-group">
+        <button type="button" class="button ghost" data-merge-button disabled>
+          Merge selected
+        </button>
+        <form
+          method="post"
+          action="{{ url_for('main.audit_confirm_grouping') }}"
+          data-merge-group-form
+        >
+          <input type="hidden" name="selected_ids" data-merge-group-selected>
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="button ghost" data-group-button disabled>
+            Group selected
+          </button>
+        </form>
+        <form
+          method="post"
+          action="{{ url_for('main.audit_ungroup') }}"
+          data-ungroup-form
+        >
+          <input type="hidden" name="selected_ids" data-ungroup-selected>
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="button ghost" data-ungroup-button disabled>
+            Ungroup selected
+          </button>
+        </form>
+      </div>
+    </div>
+    <p class="muted" style="font-size: 0.82rem;">Rows highlighted in amber share the same date and route; red rows are missing a return leg.</p>
+    <div class="table-scroll">
+    <table data-flight-table>
+      <thead>
+        <tr>
+          <th class="merge-col"></th>
+          <th>No.</th>
+          <th>Merge Group</th>
+          <th>Date</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Flight</th>
+          <th>Airline Code</th>
+          <th>Source</th>
+          <th>Distance</th>
+          <th>Flagged</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for flight in flights %}
+          <tr
+            class="{% if flight.id in duplicate_ids %}dup-row{% endif %}{% if flight.id in missing_leg_ids %} missing-leg-row{% endif %}"
+            data-flight-id="{{ flight.id }}"
+            data-traveller="{{ flight.traveller_key }}"
+            data-booking-site="{{ flight.booking_site_key }}"
+            data-aircraft="{{ (flight.aircraft or '')|lower|trim }}"
+            data-traveller-label="{{ (flight.traveller or '')|lower|trim }}"
+            data-source-label="{{ (flight.booking_site or '')|lower|trim }}"
+            data-airline="{{ ((flight.airline_code or '') ~ '|' ~ (flight.operating_airline_code or ''))|lower|trim }}"
+            data-airports="{{ ((flight.start_airport or '') ~ '|' ~ (flight.end_airport or '') ~ '|' ~ (flight.origin_name or '') ~ '|' ~ (flight.destination_name or ''))|lower|trim }}"
+            data-countries="{{ ((flight.start_country or '') ~ '|' ~ (flight.end_country or ''))|lower|trim }}"
+            data-cities="{{ ((flight.start_city_name or '') ~ '|' ~ (flight.end_city_name or ''))|lower|trim }}"
+            data-flight-number="{{ ((flight.flight_number or '') ~ '|' ~ (flight.airline_code or '') ~ (flight.flight_number or ''))|lower|trim }}"
+            data-supplier-confirmation="{{ (flight.supplier_confirmation or '')|lower|trim }}"
+            data-group-key="{{ flight.group_key }}"
+            data-group-primary="{{ 1 if flight.is_group_primary else 0 }}"
+            {% if flight.id in duplicate_ids %}data-duplicate="1"{% endif %}
+            {% if flight.id in missing_leg_ids %}data-missing-leg="1"{% endif %}
+          >
+            <td class="merge-cell">
+              <label class="merge-select">
+                <input
+                  type="checkbox"
+                  data-merge-select
+                  value="{{ flight.id }}"
+                  aria-label="Select flight {{ flight.id }} for merge"
+                >
+              </label>
+            </td>
+            <td>
+              {{ flight.group_row_number }}
+            </td>
+            <td>
+              <span data-row-default>{{ grouping_labels.get(flight.grouping_id, "-") }}</span>
+              <span data-row-blended>
+                {{ grouping_labels.get(flight.grouping_id, "-") }}
+              </span>
+            </td>
+            <td>
+              <span data-row-default>{{ flight.start_date }}</span>
+              <span data-row-blended>
+                {{ blended_map.get(flight.id, {}).get("start_date", "-") or "-" }}
+              </span>
+            </td>
+            <td>
+              <span data-row-default>{{ flight.origin_name }}</span>
+              <span data-row-blended>
+                {{ blended_map.get(flight.id, {}).get("origin_name", "-") or "-" }}
+              </span>
+            </td>
+            <td>
+              <span data-row-default>{{ flight.destination_name }}</span>
+              <span data-row-blended>
+                {{ blended_map.get(flight.id, {}).get("destination_name", "-") or "-" }}
+              </span>
+            </td>
+            <td>
+              <span data-row-default>{{ flight.flight_number or "-" }}</span>
+              <span data-row-blended>
+                {{ blended_map.get(flight.id, {}).get("flight_number", "-") or "-" }}
+              </span>
+            </td>
+            <td>
+              <span data-row-default>{{ flight.airline_code or "-" }}</span>
+              <span data-row-blended>
+                {{ blended_map.get(flight.id, {}).get("airline_code", "-") or "-" }}
+              </span>
+            </td>
+            <td>
+              <span data-row-default>{{ flight.booking_site or "-" }}</span>
+              <span data-row-blended>
+                {{ blended_map.get(flight.id, {}).get("booking_site", "-") or "-" }}
+              </span>
+            </td>
+            <td>
+              <span data-row-default>{{ flight.distance or "-" }}</span>
+              <span data-row-blended>
+                {{ blended_map.get(flight.id, {}).get("distance", "-") or "-" }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="flag-pill"
+                data-follow-up-pill
+                {% if not flight.follow_up %}hidden{% endif %}
+              >
+                Flagged
+              </span>
+            </td>
+            <td class="actions">
+              <form
+                method="post"
+                action="{{ url_for('main.flight_exclude', flight_id=flight.id) }}"
+                data-exclude-form
+              >
+                <input
+                  type="hidden"
+                  name="exclude"
+                  data-exclude-input
+                  value="{{ 0 if flight.exclude_from_stats else 1 }}"
+                >
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button
+                  type="submit"
+                  class="button{% if flight.exclude_from_stats %} danger{% else %} ghost{% endif %}"
+                  data-exclude-button
+                  aria-label="{{ 'Include' if flight.exclude_from_stats else 'Exclude' }}"
+                  title="{{ 'Include' if flight.exclude_from_stats else 'Exclude' }}"
+                >
+                  <i
+                    class="fa-solid {% if flight.exclude_from_stats %}fa-circle-check{% else %}fa-ban{% endif %}"
+                    aria-hidden="true"
+                  ></i>
+                  <span class="sr-only">
+                    {{ "Include" if flight.exclude_from_stats else "Exclude" }}
+                  </span>
+                </button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('main.flight_follow_up', flight_id=flight.id) }}"
+                data-follow-up-form
+              >
+                <input
+                  type="hidden"
+                  name="flag"
+                  data-follow-up-input
+                  value="{{ 0 if flight.follow_up else 1 }}"
+                >
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button
+                  type="submit"
+                  class="button ghost"
+                  data-follow-up-button
+                  aria-label="{{ 'Unflag' if flight.follow_up else 'Flag' }}"
+                  title="{{ 'Unflag' if flight.follow_up else 'Flag' }}"
+                >
+                  <i
+                    class="fa-solid {% if flight.follow_up %}fa-flag-slash{% else %}fa-flag{% endif %}"
+                    aria-hidden="true"
+                  ></i>
+                  <span class="sr-only">
+                    {{ "Unflag" if flight.follow_up else "Flag" }}
+                  </span>
+                </button>
+              </form>
+              <form
+                method="post"
+                action="{{ url_for('main.flight_clear_registration', flight_id=flight.id) }}"
+                data-clear-registration-form
+              >
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button
+                  type="submit"
+                  class="button ghost"
+                  aria-label="Clear aircraft registration"
+                  title="Clear aircraft registration"
+                  data-clear-registration-button
+                >
+                  <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+                  <span class="sr-only">Clear registration</span>
+                </button>
+              </form>
+              <a
+                class="button ghost"
+                href="{{ url_for('main.flight_edit', flight_id=flight.id) }}"
+                aria-label="Edit"
+                title="Edit"
+              >
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                <span class="sr-only">Edit</span>
+              </a>
+              <a
+                class="button ghost"
+                href="{{ url_for('main.flight_duplicate', flight_id=flight.id, next=request.path) }}"
+                aria-label="Duplicate"
+                title="Duplicate"
+              >
+                <i class="fa-solid fa-copy" aria-hidden="true"></i>
+                <span class="sr-only">Duplicate</span>
+              </a>
+              <form
+                method="post"
+                action="{{ url_for('main.flight_delete', flight_id=flight.id) }}"
+                data-flight-delete
+                data-flight-id="{{ flight.id }}"
+              >
+                <button type="submit" class="button danger" aria-label="Delete" title="Delete">
+                  <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                  <span class="sr-only">Delete</span>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% set gemini = gemini_by_flight.get(flight.id, {}) %}
+          {% set tracked = history_by_flight.get(flight.id, {}) %}
+          {% set flight_aircraft_type = flight.aircraft or "-" %}
+          {% set flight_aircraft_registration = flight.aircraft_registration or "-" %}
+          {% set history_aircraft_type = gemini.get("aircraft_type") or "-" %}
+          {% set history_aircraft_registration = gemini.get("aircraft_registration") or "-" %}
+          {% set tracked_aircraft_type = tracked.get("aircraft_type") or "-" %}
+          {% set tracked_registration = tracked.get("aircraft_registration") or "-" %}
+          <tr
+            class="gemini-row"
+            data-gemini-row
+            data-group-key="{{ flight.group_key }}"
+            data-flight-id="{{ flight.id }}"
+          >
+            <td colspan="12">
+              <div class="muted">
+                <strong>Flight aircraft type:</strong>
+                <span
+                  data-flight-aircraft-type
+                  class="{% if flight_aircraft_type != '-' and history_aircraft_type != '-' and flight_aircraft_type != history_aircraft_type %}diff-value{% endif %}"
+                >
+                  {{ flight_aircraft_type }}
+                </span>
+                {% if flight_aircraft_type != "-" %}
+                  <form
+                    method="post"
+                    action="{{ url_for('main.flight_apply_aircraft_to_group', flight_id=flight.id) }}"
+                    class="inline-form"
+                    data-apply-flight-aircraft-form
+                  >
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button
+                      type="submit"
+                      class="button ghost"
+                      aria-label="Apply flight aircraft type to group"
+                      title="Apply flight aircraft type to group"
+                      data-apply-flight-aircraft-button
+                    >
+                      <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                      <span class="sr-only">Apply flight aircraft type to group</span>
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+              <div class="muted">
+                <strong>Flight registration:</strong>
+                <span
+                  data-flight-aircraft-registration
+                  class="{% if flight_aircraft_registration != '-' and history_aircraft_registration != '-' and flight_aircraft_registration != history_aircraft_registration %}diff-value{% endif %}"
+                >
+                  {{ flight_aircraft_registration }}
+                </span>
+              </div>
+              <div class="muted">
+                <strong>Gemini aircraft type:</strong>
+                <span
+                  data-gemini-aircraft-type
+                  class="{% if flight_aircraft_type != '-' and history_aircraft_type != '-' and flight_aircraft_type != history_aircraft_type %}diff-value{% endif %}"
+                >
+                  {{ history_aircraft_type }}
+                </span>
+                {% if history_aircraft_type != "-" %}
+                  <form
+                    method="post"
+                    action="{{ url_for('main.flight_overwrite_aircraft_from_gemini', flight_id=flight.id) }}"
+                    class="inline-form"
+                    data-overwrite-gemini-form
+                  >
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button
+                      type="submit"
+                      class="button ghost"
+                      aria-label="Overwrite aircraft type from Gemini"
+                      title="Overwrite aircraft type from Gemini"
+                      data-overwrite-gemini-button
+                    >
+                      <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                      <span class="sr-only">Overwrite aircraft type from Gemini</span>
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+              <div class="muted">
+                <strong>Gemini registration:</strong>
+                <span
+                  data-gemini-aircraft-registration
+                  class="{% if flight_aircraft_registration != '-' and history_aircraft_registration != '-' and flight_aircraft_registration != history_aircraft_registration %}diff-value{% endif %}"
+                >
+                  {{ history_aircraft_registration }}
+                </span>
+              </div>
+              <div class="muted">
+                <strong>Tracked registration:</strong>
+                <span data-history-registration>
+                  {{ tracked_registration }}
+                </span>
+                <span
+                  data-history-aircraft-type-wrap
+                  {% if tracked_aircraft_type == "-" %}hidden{% endif %}
+                >
+                  · <span data-history-aircraft-type>{{ tracked_aircraft_type }}</span>
+                </span>
+                <span
+                  data-history-link-wrap
+                  {% if not tracked.get("id") %}hidden{% endif %}
+                >
+                  · <a
+                    data-history-link
+                    href="{{ url_for('main.flight_history_record_view', history_id=tracked.get('id') or 0) }}"
+                  >View history</a>
+                </span>
+                <button
+                  type="button"
+                  class="button ghost"
+                  data-flight-history-refresh
+                  data-flight-history-target="history"
+                  data-flight-history-url="{{ url_for('main.flightaware_history', flight_id=flight.id) }}"
+                >
+                  Refresh from FlightAware
+                </button>
+              </div>
+              <div class="muted">
+                <strong>Gemini reasoning:</strong>
+                <div data-gemini-reasoning>
+                  {% if gemini.get("reasoning") %}
+                    <pre class="code-block">{{ gemini.get("reasoning") }}</pre>
+                  {% else %}
+                    -
+                  {% endif %}
+                </div>
+                {% if gemini.get("id") %}
+                  <form
+                    method="post"
+                    action="{{ url_for('main.flight_history_record_delete', history_id=gemini.get('id')) }}"
+                    class="inline-form"
+                    data-gemini-history-delete
+                  >
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button
+                      type="submit"
+                      class="button ghost"
+                      aria-label="Delete Gemini history entry"
+                      title="Delete Gemini history entry"
+                      data-gemini-history-delete-button
+                    >
+                      <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                      <span class="sr-only">Delete Gemini history entry</span>
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+        {% if flights %}
+          <tr class="filter-empty" data-filter-empty>
+            <td colspan="11">No flights match these filters.</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="12">
+              <div class="empty-state">
+                <i class="fa-solid fa-plane-up empty-state__icon" aria-hidden="true"></i>
+                <h3 class="empty-state__title">No flights yet</h3>
+                <p class="empty-state__text">Add a flight by hand or import a CSV export to start your log.</p>
+                <div class="empty-state__actions">
+                  <a class="button" href="{{ url_for('main.flight_new') }}">Add flight</a>
+                  <a class="button ghost" href="{{ url_for('main.import_csv') }}">Import CSV</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    </div>
+    <section class="modal" data-merge-modal hidden>
+      <div class="modal__backdrop" data-merge-cancel></div>
+      <div class="modal__content" role="dialog" aria-modal="true" aria-labelledby="merge-title">
+        <div class="modal__header">
+          <div>
+            <h3 id="merge-title">Confirm merge</h3>
+            <p class="muted" data-merge-summary>
+              Select at least two flights to merge.
+            </p>
+          </div>
+          <button type="button" class="button ghost" data-merge-cancel>
+            Cancel
+          </button>
+        </div>
+        <div class="modal__body">
+          <div class="merge-preview__body">
+            <div class="merge-preview__card">
+              <h4>Primary record</h4>
+              <div class="merge-preview__options" data-merge-primary-options></div>
+            </div>
+            <div class="merge-preview__card">
+              <h4>Merged record</h4>
+              <dl class="merge-preview__fields" data-merge-fields></dl>
+            </div>
+          </div>
+        </div>
+        <form
+          method="post"
+          action="{{ url_for('main.flight_merge') }}"
+          class="modal__actions"
+          data-merge-form
+        >
+          <input type="hidden" name="primary_id" data-merge-primary-input>
+          <input type="hidden" name="selected_ids" data-merge-selected-input>
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="button" data-merge-confirm disabled>
+            Confirm merge
+          </button>
+        </form>
+      </div>
+    </section>
+  </section>
+  <script>
+    window.flightsMergeData = {{ flights_json|safe }};
+  </script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block page_title %}Utilities{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Admin</p>
+      <h1 class="page-header__title">Utilities</h1>
+      <p class="page-header__lead">Run the maintenance and backfill scripts from <code>scripts/</code> and watch their output live.</p>
+    </div>
+  </header>
+  <section class="panel panel--wide">
+    <div class="panel-header">
+      <h2>Script runner</h2>
+    </div>
+
+    <div class="script-runner">
+      <div class="script-runner__controls">
+        <label>
+          Script
+          <select data-script-select>
+            <option value="">Select a script</option>
+            {% for script in scripts %}
+              <option value="{{ script.key }}">{{ script.title }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <p class="muted script-runner__description" data-script-description>
+          Choose a script to view its details.
+        </p>
+
+        <div class="script-runner__fields">
+          <div data-script-arguments></div>
+          <div data-script-options></div>
+        </div>
+
+        <div class="form-actions">
+          <button class="button" type="button" data-script-run disabled>
+            Run Script
+          </button>
+          <button class="button danger" type="button" data-script-stop disabled>
+            Stop Script
+          </button>
+          <button class="button ghost" type="button" data-script-clear>
+            Clear Output
+          </button>
+        </div>
+      </div>
+
+      <div class="script-runner__output">
+        <div class="script-runner__status">
+          <span data-script-status>Idle</span>
+          <span class="script-runner__command" data-script-command></span>
+        </div>
+        <textarea data-script-output readonly placeholder="Script output..."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel panel--wide">
+    <div class="panel-header">
+      <div>
+        <h2>Run history</h2>
+        <div class="panel-meta">
+          Recent script runs from this session.
+        </div>
+      </div>
+    </div>
+    <div class="script-history" data-script-history>
+      <div class="muted">No history yet.</div>
+    </div>
+  </section>
+
+  <script>
+    window.scriptCatalog = {{ scripts | tojson }};
+  </script>
+{% endblock %}

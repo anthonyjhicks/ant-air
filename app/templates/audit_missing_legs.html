@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Missing Leg Audit{% if home_city %} ({{ home_city }} base){% endif %}</h2>
+        <div class="panel-meta">
+          {% if include_ungrouped %}
+            Showing {{ entries | length }} potential gaps across {{ summary.total_flights }} flights ·
+            Including unassigned trips · Return window {{ window_days }} days ·
+            <a href="{{ url_for('main.audit_missing_legs') }}">Clear</a>
+          {% else %}
+            {{ summary.total_missing }} flights may be missing a return to {{ home_city or "home" }} · Return window {{ window_days }} days
+          {% endif %}
+        </div>
+        <label class="audit-toggle">
+          <input
+            type="checkbox"
+            class="audit-toggle__input"
+            data-audit-legs-ungrouped-toggle
+            {% if include_ungrouped %}checked{% endif %}
+          >
+          <span class="audit-toggle__track" aria-hidden="true">
+            <span class="audit-toggle__thumb"></span>
+          </span>
+          <span class="audit-toggle__label">
+            Include unassigned trips
+          </span>
+        </label>
+        <label class="audit-toggle">
+          <input
+            type="checkbox"
+            class="audit-toggle__input"
+            data-audit-legs-suggested-toggle
+            checked
+          >
+          <span class="audit-toggle__track" aria-hidden="true">
+            <span class="audit-toggle__thumb"></span>
+          </span>
+          <span class="audit-toggle__label">
+            Show suggested rows
+          </span>
+        </label>
+      </div>
+    </div>
+    {% if home_city or home_airports %}
+      <p class="muted">
+        Finds outbound flights from {{ home_city or home_airports | join("/") }} without a return within {{ window_days }} days.
+      </p>
+    {% else %}
+      <div class="flash flash-warning">
+        No home base configured. Set <code>HOME_CITY</code> (and optionally <code>HOME_AIRPORTS</code>)
+        in your environment so this audit knows which flights are outbound.
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="summary-grid">
+    <div class="summary-card">
+      <h3>Potential gaps</h3>
+      <p>{{ summary.total_missing }}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Travellers flagged</h3>
+      <p>{{ summary.total_groups }}</p>
+    </div>
+    <div class="summary-card">
+      <h3>Total flights</h3>
+      <p>{{ summary.total_flights }}</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Date</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Return to {{ home_city or "home" }}</th>
+          <th>Trip</th>
+          <th>Traveller</th>
+          <th>Source</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+          {% set flight = entry.flight %}
+          <tr>
+            <td>{{ flight.id }}</td>
+            <td>{{ flight.start_date }}</td>
+            <td>{{ flight.origin_name }}</td>
+            <td>{{ flight.destination_name }}</td>
+            <td>{{ entry.reverse_route }}</td>
+            <td>{{ entry.group_label }}</td>
+            <td>{{ flight.traveller or "-" }}</td>
+            <td>{{ flight.source_file or "-" }}</td>
+            <td class="actions">
+              <a
+                class="button ghost"
+                href="{{ url_for('main.flight_edit', flight_id=flight.id, next=request.path) }}"
+              >
+                Edit
+              </a>
+              <form
+                method="post"
+                action="{{ url_for('main.audit_missing_legs_ignore', flight_id=flight.id) }}"
+              >
+                <input type="hidden" name="next" value="{{ request.full_path }}">
+                <button type="submit" class="button ghost">Ignore</button>
+              </form>
+            </td>
+          </tr>
+          {% for thread_flight in entry.thread_flights or [] %}
+            <tr class="audit-thread-row">
+              <td></td>
+              <td>{{ thread_flight.start_date }}</td>
+              <td>{{ thread_flight.origin_name }}</td>
+              <td>{{ thread_flight.destination_name }}</td>
+              <td></td>
+              <td>{{ thread_flight.trip_name or "-" }}</td>
+              <td>{{ thread_flight.traveller or "-" }}</td>
+              <td>{{ thread_flight.source_file or "-" }}</td>
+              <td class="audit-thread-label">Threaded flight</td>
+            </tr>
+          {% endfor %}
+          <tr class="audit-suggested-row" data-audit-suggested-row>
+            <td>-</td>
+            <td>{{ flight.start_date or "-" }}</td>
+            <td>{{ flight.destination_name }}</td>
+            <td>{{ flight.origin_name }}</td>
+            <td>{{ entry.reverse_route }}</td>
+            <td>{{ entry.group_label }}</td>
+            <td>{{ flight.traveller or "-" }}</td>
+            <td>{{ flight.source_file or "-" }}</td>
+            <td class="audit-suggested-label">Expected return</td>
+          </tr>
+        {% endfor %}
+        {% if not entries %}
+          <tr>
+            <td colspan="9">No flights with missing return legs.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block page_title %}City pair audit{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Audits</p>
+      <h1 class="page-header__title">City pair audit</h1>
+      <p class="page-header__lead">
+        Every flight between two cities, in both directions. City names match
+        loosely; add IATA codes to catch flights recorded by airport only.
+      </p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <form method="get" class="pair-form" data-pair-form>
+      <label class="field">
+        <span class="field__label">City A</span>
+        <input type="text" name="a" value="{{ city_a }}" placeholder="e.g. {{ home_city or 'London' }}" required>
+      </label>
+      <label class="field">
+        <span class="field__label">City A airports</span>
+        <input type="text" name="a_airports" value="{{ airports_a | join(', ') }}" placeholder="LHR, LGW, LCY">
+      </label>
+      <label class="field">
+        <span class="field__label">City B</span>
+        <input type="text" name="b" value="{{ city_b }}" placeholder="e.g. Paris" required>
+      </label>
+      <label class="field">
+        <span class="field__label">City B airports</span>
+        <input type="text" name="b_airports" value="{{ airports_b | join(', ') }}" placeholder="CDG, ORY">
+      </label>
+      <div class="pair-form__actions">
+        <button type="submit" class="button">Run audit</button>
+      </div>
+    </form>
+  </section>
+
+  {% if ready %}
+    <section class="stat-strip">
+      <div class="stat-strip__item">
+        <span class="stat-strip__value">{{ total }}</span>
+        <span class="stat-strip__label">flights</span>
+      </div>
+      <div class="stat-strip__item">
+        <span class="stat-strip__value">{{ a_to_b }}</span>
+        <span class="stat-strip__label">{{ city_a }} → {{ city_b }}</span>
+      </div>
+      <div class="stat-strip__item">
+        <span class="stat-strip__value">{{ b_to_a }}</span>
+        <span class="stat-strip__label">{{ city_b }} → {{ city_a }}</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      {% if flights %}
+        <div class="table-scroll">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Route</th>
+                <th>Start</th>
+                <th>Start Airport</th>
+                <th>End</th>
+                <th>End Airport</th>
+                <th>Flight</th>
+                <th>Airline</th>
+                <th>Source</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for flight in flights %}
+                <tr>
+                  <td class="mono">{{ flight.id }}</td>
+                  <td class="mono">{{ flight.start_date }}</td>
+                  <td>{{ flight.route_label }}</td>
+                  <td>{{ flight.origin_name }}</td>
+                  <td class="mono">{{ flight.start_airport or "-" }}</td>
+                  <td>{{ flight.destination_name }}</td>
+                  <td class="mono">{{ flight.end_airport or "-" }}</td>
+                  <td class="mono">{{ flight.flight_number or "-" }}</td>
+                  <td class="mono">{{ flight.airline_code or "-" }}</td>
+                  <td>{{ flight.source_file or "-" }}</td>
+                  <td class="actions">
+                    <a
+                      class="button ghost button--sm"
+                      href="{{ url_for('main.flight_edit', flight_id=flight.id, next=request.full_path) }}"
+                    >
+                      Edit
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class="fa-solid fa-route empty-state__icon" aria-hidden="true"></i>
+          <h3 class="empty-state__title">No flights between {{ city_a }} and {{ city_b }}</h3>
+          <p class="empty-state__text">Try adding airport codes, or check the spelling of the city names.</p>
+        </div>
+      {% endif %}
+    </section>
+  {% else %}
+    <section class="panel">
+      <div class="empty-state">
+        <i class="fa-solid fa-route empty-state__icon" aria-hidden="true"></i>
+        <h3 class="empty-state__title">Pick two cities to compare</h3>
+        <p class="empty-state__text">
+          {% if home_city %}
+            City A defaults to your home base ({{ home_city }}). Enter a second city above.
+          {% else %}
+            Set <code>HOME_CITY</code> in your environment to pre-fill City A with your home base.
+          {% endif %}
+        </p>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

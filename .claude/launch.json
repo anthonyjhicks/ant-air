@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ant-air",
+      "runtimeExecutable": "./run.sh",
+      "runtimeArgs": ["--port", "8010"],
+      "port": 8010
+    }
+  ]
+}

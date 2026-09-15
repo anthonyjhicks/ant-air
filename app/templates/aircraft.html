@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block page_title %}Aircraft{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Data</p>
+      <h1 class="page-header__title">Aircraft</h1>
+      <p class="page-header__lead">
+        <strong>{{ aircrafts|length }}</strong> airframe{{ "" if aircrafts|length == 1 else "s" }} you have flown on,
+        with photos and ownership details from ADSBDB.
+      </p>
+    </div>
+    <div class="page-header__actions">
+      <button type="button" class="button ghost" data-scan-trigger>
+        <i class="fa-solid fa-camera" aria-hidden="true"></i> Scan a registration
+      </button>
+    </div>
+  </header>
+  <section>
+
+    <div class="page-search-banner" data-page-search-banner>
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <span class="page-search-banner__text" data-page-search-text></span>
+      <button type="button" class="page-search-banner__clear" data-page-search-clear>Clear search</button>
+    </div>
+
+    {% if aircrafts %}
+      <div class="aircraft-grid" data-aircraft-grid>
+        {% for aircraft in aircrafts %}
+          <article
+            class="aircraft-card"
+            data-aircraft-search="{{ (aircraft.registration or '')|lower }} {{ (aircraft.type or '')|lower }} {{ (aircraft.icao_type or '')|lower }} {{ (aircraft.manufacturer or '')|lower }} {{ (aircraft.owner or '')|lower }} {{ (aircraft.owner_country or '')|lower }}"
+          >
+            <div class="aircraft-card__media">
+              {% if aircraft.thumbnail_url and aircraft.photo_url %}
+                <button
+                  class="aircraft-card__thumb"
+                  type="button"
+                  data-aircraft-lightbox
+                  data-full-src="{{ aircraft.photo_url }}"
+                  data-title="{{ aircraft.registration }}"
+                >
+                  <img
+                    src="{{ aircraft.thumbnail_url }}"
+                    alt="Aircraft {{ aircraft.registration }} thumbnail"
+                    loading="lazy"
+                  >
+                </button>
+              {% elif aircraft.thumbnail_url %}
+                <img
+                  class="aircraft-card__thumb-image"
+                  src="{{ aircraft.thumbnail_url }}"
+                  alt="Aircraft {{ aircraft.registration }} thumbnail"
+                  loading="lazy"
+                >
+              {% else %}
+                <div class="aircraft-card__thumb aircraft-card__thumb--empty">
+                  No image
+                </div>
+              {% endif %}
+              {% if aircraft.photo_url %}
+                <a
+                  class="aircraft-card__link"
+                  href="{{ aircraft.photo_url }}"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Open full image
+                </a>
+              {% endif %}
+            </div>
+
+            <div class="aircraft-card__body">
+              <div class="aircraft-card__title">
+                <span class="cell-main">{{ aircraft.registration }}</span>
+                <span class="cell-sub">{{ aircraft.type or "Unknown type" }}</span>
+              </div>
+
+              <dl class="aircraft-card__details">
+                <div>
+                  <dt>ICAO type</dt>
+                  <dd>{{ aircraft.icao_type or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Manufacturer</dt>
+                  <dd>{{ aircraft.manufacturer or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Mode S</dt>
+                  <dd>{{ aircraft.mode_s or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Owner</dt>
+                  <dd>{{ aircraft.owner or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Operator</dt>
+                  <dd>{{ aircraft.owner_operator or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Owner country</dt>
+                  <dd>{{ aircraft.owner_country or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Flights</dt>
+                  <dd>{{ aircraft.flight_count }}</dd>
+                </div>
+                <div>
+                  <dt>Last flown</dt>
+                  <dd>{{ aircraft.last_flight_date or "-" }}</dd>
+                </div>
+                <div>
+                  <dt>Source</dt>
+                  <dd>
+                    <a href="{{ aircraft.source_url }}" target="_blank" rel="noopener">
+                      ADSBDB
+                    </a>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="panel">
+        <div class="empty-state">
+          <i class="fa-solid fa-jet-fighter-up empty-state__icon" aria-hidden="true"></i>
+          <h3 class="empty-state__title">No aircraft yet</h3>
+          <p class="empty-state__text">Aircraft appear here once your flights have registrations. FlightAware lookups and boarding-pass scans fill them in automatically.</p>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="modal" data-aircraft-modal hidden>
+    <div class="modal__backdrop" data-aircraft-close></div>
+    <div
+      class="modal__content modal__content--media"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="aircraft-lightbox-title"
+    >
+      <div class="modal__header">
+        <h2 id="aircraft-lightbox-title" data-aircraft-modal-title>Aircraft image</h2>
+        <button class="button ghost" type="button" data-aircraft-close>Close</button>
+      </div>
+      <div class="modal__body">
+        <img
+          class="aircraft-lightbox__image"
+          data-aircraft-modal-image
+          src=""
+          alt=""
+          loading="lazy"
+        >
+      </div>
+    </div>
+  </section>
+{% endblock %}

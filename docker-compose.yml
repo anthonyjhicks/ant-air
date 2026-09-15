@@ -1,0 +1,56 @@
+# Quick start: `docker compose up --build` brings up Postgres and Ant Air on
+# http://localhost:8000. Copy .env.example to .env first and set SECRET_KEY
+# plus any API keys you want; DATABASE_URL is provided here.
+#
+# Optional MCP server on http://localhost:8001/mcp:
+#   docker compose --profile mcp up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: antair
+      POSTGRES_PASSWORD: antair
+      POSTGRES_DB: ant_air
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U antair -d ant_air"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://antair:antair@db:5432/ant_air
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mcp:
+    build: .
+    profiles: [mcp]
+    command: ["python", "-m", "app.mcp_server"]
+    ports:
+      - "8001:8001"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://antair:antair@db:5432/ant_air
+      MCP_TRANSPORT: streamable-http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8001"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

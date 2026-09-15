@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block page_title %}{{ trip.name or "Trip" }}{% endblock %}
+{% block content %}
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Trip</p>
+      <h1 class="page-header__title">{{ trip.name or "Trip" }}</h1>
+      <p class="page-header__lead">{{ trip_display_date(trip) }} &middot; {{ legs | length }} leg{{ "" if legs|length == 1 else "s" }}</p>
+    </div>
+    <div class="page-header__actions">
+      <a class="button ghost" href="{{ url_for('main.trip_list') }}">
+        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All trips
+      </a>
+      <a class="button" href="{{ url_for('main.trip_edit', trip_id=trip.id) }}">
+        <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit trip
+      </a>
+    </div>
+  </header>
+  <section class="panel">
+    <div class="trip-summary">
+      <div>
+        <span class="muted">Trip ID</span>
+        <div>{{ trip.trip_code or "-" }}</div>
+      </div>
+      <div>
+        <span class="muted">Type</span>
+        <div>{{ trip.trip_type or "-" }}</div>
+      </div>
+      <div>
+        <span class="muted">Start</span>
+        <div>{{ trip_display_date(trip) }}</div>
+      </div>
+      <div>
+        <span class="muted">Legs</span>
+        <div>{{ legs | length }}</div>
+      </div>
+    </div>
+    {% if trip.notes %}
+      <p class="muted">{{ trip.notes }}</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h3>Trip legs</h3>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Mode</th>
+          <th>Date</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Carrier</th>
+          <th>Flight/Service</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for leg in legs %}
+          <tr>
+            <td>{{ leg.sequence }}</td>
+            <td>{{ leg.mode | title }}</td>
+            <td>{{ trip_leg_display_date(leg) }}</td>
+            <td>{{ leg.start_city_name or leg.start_airport or leg.start_country or "-" }}</td>
+            <td>{{ leg.end_city_name or leg.end_airport or leg.end_country or "-" }}</td>
+            <td>{{ leg.carrier_name or leg.carrier_code or "-" }}</td>
+            <td>{{ leg.flight_number or leg.service_class or "-" }}</td>
+          </tr>
+        {% endfor %}
+        {% if not legs %}
+          <tr>
+            <td colspan="7" class="muted">No legs yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+{% endblock %}

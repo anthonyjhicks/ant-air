@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Missing Airline Audit</h2>
+        <div class="panel-meta">
+          {{ total }} flights missing airline data
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    {% if flights %}
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Flight</th>
+            <th>Airline Code</th>
+            <th>Source</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for flight in flights %}
+            <tr>
+              <td>{{ flight.id }}</td>
+              <td>{{ flight.start_date }}</td>
+              <td>{{ flight.origin_name }}</td>
+              <td>{{ flight.destination_name }}</td>
+              <td>{{ flight.flight_number or "-" }}</td>
+              <td>{{ flight.airline_code or "-" }}</td>
+              <td>{{ flight.source_file or "-" }}</td>
+              <td class="actions">
+                <a
+                  class="button ghost"
+                  href="{{ url_for('main.flight_edit', flight_id=flight.id, next=request.path) }}"
+                >
+                  Edit
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No flights are missing airline data.</p>
+    {% endif %}
+  </section>
+{% endblock %}

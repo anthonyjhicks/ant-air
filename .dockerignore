@@ -1,0 +1,39 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+.venv
+venv/
+.pytest_cache
+tests/
+
+# Local configuration and data (pass configuration through the environment)
+.env
+.env.*
+!.env.example
+import/*
+!import/samples
+*.db
+*.sqlite*
+*.log
+
+# Editors, tooling, docs
+.vscode
+.idea
+.claude
+.DS_Store
+*.md
+PLAN-iOS.md
+design-tokens.json
+docker-compose.yml
+run.sh
+run_mcp.sh
+
+# Other platforms
+ios/

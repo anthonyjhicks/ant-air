@@ -1,0 +1,1117 @@
+{% extends "base.html" %}
+{% block page_title %}Dashboard{% endblock %}
+{% block toolbar_extra %}
+  <div class="dashboard-units">
+    <label class="audit-toggle dashboard-units__toggle" title="Distance units">
+      <span class="audit-toggle__label">mi</span>
+      <input
+        type="checkbox"
+        class="audit-toggle__input"
+        data-distance-unit-toggle
+        aria-label="Toggle distance units"
+      >
+      <span class="audit-toggle__track" aria-hidden="true">
+        <span class="audit-toggle__thumb"></span>
+      </span>
+      <span class="audit-toggle__label">km</span>
+    </label>
+  </div>
+{% endblock %}
+{% block content %}
+
+  <header class="page-header">
+    <div>
+      <p class="page-header__eyebrow">Overview</p>
+      <h1 class="page-header__title">Your flight log</h1>
+      <p class="page-header__lead">
+        <strong>{{ stats.total_flights }}</strong> flight{{ "" if stats.total_flights == 1 else "s" }}
+        &middot; <strong>{{ stats.top_countries|length }}</strong> countr{{ "y" if stats.top_countries|length == 1 else "ies" }}
+        &middot; <strong>{{ stats.top_airlines|length }}</strong> airline{{ "" if stats.top_airlines|length == 1 else "s" }}
+        {% if home_city %}&middot; home base <strong>{{ home_city }}</strong>{% endif %}
+      </p>
+    </div>
+    <div class="page-header__actions">
+      <a class="button ghost" href="{{ url_for('main.flight_list') }}">
+        <i class="fa-solid fa-list" aria-hidden="true"></i> All flights
+      </a>
+      <a class="button" href="{{ url_for('main.flight_new') }}">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add flight
+      </a>
+    </div>
+  </header>
+
+  <div class="page-search-banner" data-page-search-banner>
+    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+    <span class="page-search-banner__text" data-page-search-text></span>
+    <button type="button" class="page-search-banner__clear" data-page-search-clear>Clear search</button>
+  </div>
+
+  {% if stats.total_flights == 0 %}
+    <section class="welcome">
+      <div>
+        <p class="welcome__eyebrow">Welcome aboard</p>
+        <h2 class="welcome__title">Every flight you've ever taken, in one place.</h2>
+        <p class="welcome__text">
+          {{ app_name }} turns your booking history into maps, charts, aircraft
+          profiles and badges. Add a flight by hand, or import a CSV export from
+          TripIt, Google Flights or BA Flightpath to get started.
+        </p>
+        <div class="welcome__actions">
+          <a class="button button--lg" href="{{ url_for('main.flight_new') }}">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> Add your first flight
+          </a>
+          <a class="button ghost button--lg" href="{{ url_for('main.import_csv') }}">
+            <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Import a CSV
+          </a>
+        </div>
+      </div>
+      <ol class="welcome__steps">
+        <li class="welcome__step">
+          <span class="welcome__step-num">1</span>
+          <div>
+            <strong>Load your flights</strong>
+            <span>Use the form, a CSV import, or <code>scripts/seed_demo_data.py</code> to try the app with fictional data.</span>
+          </div>
+        </li>
+        <li class="welcome__step">
+          <span class="welcome__step-num">2</span>
+          <div>
+            <strong>Set your home base</strong>
+            <span>Set <code>HOME_CITY</code> and <code>HOME_AIRPORTS</code> so audits can spot missing return legs.</span>
+          </div>
+        </li>
+        <li class="welcome__step">
+          <span class="welcome__step-num">3</span>
+          <div>
+            <strong>Add API keys (optional)</strong>
+            <span>FlightAware fills in aircraft registrations; Gemini writes insights and reads boarding passes.</span>
+          </div>
+        </li>
+      </ol>
+    </section>
+  {% endif %}
+
+  <details class="panel quick-add-panel" data-quick-add-panel>
+    <summary class="panel-header quick-add-panel__summary">
+      <h2><i class="fa-solid fa-bolt" aria-hidden="true"></i> Quick add flight</h2>
+      <span class="panel-meta">Registration, route and date. The rest is looked up.</span>
+    </summary>
+    <form class="quick-add-form" data-quick-add-form novalidate>
+      <div class="quick-add-form__grid">
+        <label class="quick-add-form__field quick-add-form__field--reg">
+          Registration
+          <input
+            type="text"
+            name="aircraft_registration"
+            autocomplete="off"
+            placeholder="e.g. G-XLEA"
+            data-quick-reg
+          >
+        </label>
+        <label class="quick-add-form__field">
+          Aircraft type
+          <input
+            type="text"
+            name="aircraft"
+            autocomplete="off"
+            placeholder="e.g. Boeing 787-9"
+          >
+        </label>
+        <label class="quick-add-form__field">
+          Airline code
+          <input
+            type="text"
+            name="airline_code"
+            autocomplete="off"
+            placeholder="e.g. BA"
+          >
+        </label>
+        <label class="quick-add-form__field">
+          Flight number
+          <input
+            type="text"
+            name="flight_number"
+            autocomplete="off"
+            placeholder="e.g. 117"
+          >
+        </label>
+        <label class="quick-add-form__field">
+          From (airport)
+          <input
+            type="text"
+            name="start_airport"
+            autocomplete="off"
+            placeholder="IATA / ICAO"
+            required
+            data-airport-lookup
+            data-airport-city-field="start_city_name"
+            data-airport-country-field="start_country"
+          >
+          <input type="hidden" name="start_city_name">
+          <input type="hidden" name="start_country">
+          <input type="hidden" name="start_lat">
+          <input type="hidden" name="start_long">
+        </label>
+        <label class="quick-add-form__field">
+          To (airport)
+          <input
+            type="text"
+            name="end_airport"
+            autocomplete="off"
+            placeholder="IATA / ICAO"
+            required
+            data-airport-lookup
+            data-airport-city-field="end_city_name"
+            data-airport-country-field="end_country"
+          >
+          <input type="hidden" name="end_city_name">
+          <input type="hidden" name="end_country">
+          <input type="hidden" name="end_lat">
+          <input type="hidden" name="end_long">
+        </label>
+        <label class="quick-add-form__field">
+          Departure date
+          <input
+            type="date"
+            name="start_date"
+            value="{{ today_iso }}"
+            required
+            data-quick-start-date
+          >
+        </label>
+        <label class="quick-add-form__field">
+          Arrival date
+          <input
+            type="date"
+            name="end_date"
+            value="{{ today_iso }}"
+            required
+            data-quick-end-date
+          >
+        </label>
+      </div>
+      <p class="quick-add-form__resolved muted" data-quick-resolved hidden></p>
+      <p class="quick-add-form__error" data-quick-error hidden></p>
+      <div class="quick-add-form__actions">
+        <button type="submit" class="button" data-quick-submit>
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+          Add flight
+        </button>
+        <button type="reset" class="button ghost" data-quick-reset>Reset</button>
+      </div>
+    </form>
+  </details>
+
+  <section class="summary-grid">
+    {% if next_flight_card %}
+      <button
+        type="button"
+        class="summary-card summary-card--action summary-card--next-flight"
+        data-next-flight-trigger
+        data-aircraft-registration="{{ next_flight_card.aircraft_registration or '' }}"
+        aria-label="Next flight details"
+      >
+        <div class="boarding-pass__main">
+          <div class="boarding-pass__head">
+            <h3><i class="fa-solid fa-plane-departure" aria-hidden="true"></i> Next flight</h3>
+            <span
+              class="boarding-pass__countdown"
+              data-next-flight-countdown
+              data-departure="{{ next_flight_card.date or '' }}"
+            >Upcoming</span>
+          </div>
+          <div class="boarding-pass__route">
+            <span class="boarding-pass__code">{{ next_flight_card.origin_code or '—' }}</span>
+            <span class="boarding-pass__path" aria-hidden="true">
+              <span class="boarding-pass__line"></span>
+              <i class="fa-solid fa-plane"></i>
+              <span class="boarding-pass__line"></span>
+            </span>
+            <span class="boarding-pass__code">{{ next_flight_card.destination_code or '—' }}</span>
+          </div>
+          <div class="boarding-pass__cities">
+            <span>{{ next_flight_card.origin or '' }}</span>
+            <span>{{ next_flight_card.destination or '' }}</span>
+          </div>
+          <dl class="boarding-pass__meta">
+            <div>
+              <dt>Date</dt>
+              <dd class="mono">{{ next_flight_card.date or '—' }}</dd>
+            </div>
+            <div>
+              <dt>Departs</dt>
+              <dd class="mono">{{ next_flight_card.time or '—' }}</dd>
+            </div>
+            <div>
+              <dt>Airline</dt>
+              <dd>{{ next_flight_card.airline_name or next_flight_card.airline_code or '—' }}</dd>
+            </div>
+            <div>
+              <dt>Aircraft</dt>
+              <dd>{{ next_flight_card.aircraft or '—' }}</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="boarding-pass__stub" aria-hidden="true">
+          <div class="boarding-pass__stub-top">
+            <span class="boarding-pass__airline">
+              {% if next_flight_card.airline_logo_url %}
+                <img
+                  src="{{ next_flight_card.airline_logo_url }}"
+                  alt=""
+                  loading="lazy"
+                  onerror="this.outerHTML = '<span>' + {{ (next_flight_card.airline_code or '?') | tojson }} + '</span>';"
+                >
+              {% else %}
+                <span>{{ next_flight_card.airline_code or '?' }}</span>
+              {% endif %}
+            </span>
+            <span class="boarding-pass__flight">
+              {{ next_flight_card.airline_code or '' }}{{ next_flight_card.flight_number or '' }}
+            </span>
+          </div>
+          {% if next_flight_card.thumbnail_url %}
+            <div class="boarding-pass__thumb">
+              <img src="{{ next_flight_card.thumbnail_url }}" alt="" loading="lazy">
+            </div>
+          {% else %}
+            <span class="boarding-pass__stub-label">Boarding pass</span>
+          {% endif %}
+          <div class="boarding-pass__stub-foot">
+            <span>{{ next_flight_card.aircraft_registration or 'Details' }}</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </div>
+        </div>
+      </button>
+    {% endif %}
+    <div class="summary-card">
+      <h3><i class="fa-solid fa-plane" aria-hidden="true"></i> Total flights</h3>
+      <p data-summary="total-flights">{{ stats.total_flights }}</p>
+    </div>
+    <div class="summary-card">
+      <h3><i class="fa-solid fa-route" aria-hidden="true"></i> <span data-distance-summary-label>Total Miles</span></h3>
+      <p data-summary="total-miles">{{ stats.total_miles }}</p>
+    </div>
+    <div class="summary-card">
+      <h3><i class="fa-solid fa-city" aria-hidden="true"></i> Top destination</h3>
+      <p data-summary="top-city-label">{{ stats.top_city[0] }}</p>
+      <span class="summary-sub" data-summary="top-city-count">
+        {{ stats.top_city[1] }} flights
+      </span>
+    </div>
+    <div class="summary-card">
+      <h3><i class="fa-solid fa-earth-europe" aria-hidden="true"></i> Top country</h3>
+      <p data-summary="top-country-label">{{ stats.top_country[0] }}</p>
+      <span class="summary-sub" data-summary="top-country-count">
+        {{ stats.top_country[1] }} flights
+      </span>
+      {% if top_country_flags|length %}
+        <div class="country-badges" aria-label="Top countries">
+          {% for item in top_country_flags %}
+            <div
+              class="country-badge"
+              title="{{ item.country }}"
+              {% if not item.flag_url %}data-flag-missing{% endif %}
+            >
+              {% if item.flag_url %}
+                <img
+                  src="{{ item.flag_url }}"
+                  alt="{{ item.country }} flag"
+                  loading="lazy"
+                  onerror="this.closest('.country-badge').classList.add('is-fallback');"
+                >
+              {% endif %}
+              <span class="country-badge__icon" aria-hidden="true">🏳️</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+    <div class="summary-card">
+      <h3><i class="fa-regular fa-calendar" aria-hidden="true"></i> Busiest year</h3>
+      <p data-summary="top-year-label">{{ stats.top_year[0] }}</p>
+      <span class="summary-sub" data-summary="top-year-count">
+        {{ stats.top_year[1] }} flights
+      </span>
+    </div>
+    <div class="summary-card summary-card--airline">
+      <h3><i class="fa-solid fa-ticket" aria-hidden="true"></i> Top airline</h3>
+      <div class="airline-card">
+        <div class="airline-card__logo">
+          <img
+            src="{{ airline_card.logo_url or '' }}"
+            alt="{{ airline_card.name or airline_card.code or 'Airline logo' }}"
+            loading="lazy"
+            data-airline-logo
+            {% if not airline_card.logo_url %}hidden{% endif %}
+          >
+          <span
+            class="airline-card__logo-fallback"
+            data-airline-logo-fallback
+            {% if airline_card.logo_url %}hidden{% endif %}
+          >
+            Logo
+          </span>
+        </div>
+        <div class="airline-card__meta">
+          <p data-summary="top-airline-label">
+            {{ airline_card.name or airline_card.code or ("Unknown airline" if airline_card.count else "-") }}
+          </p>
+          <span class="summary-sub" data-summary="top-airline-count">
+            {{ airline_card.count }} flights
+          </span>
+          <span class="summary-sub" data-summary="top-airline-code">
+            {{ airline_card.code or "Unknown code" }}
+          </span>
+        </div>
+      </div>
+      {% if next_airlines|length %}
+        <div class="airline-card__next" aria-label="Next airlines">
+          {% for airline in next_airlines %}
+            <div
+              class="airline-card__badge"
+              title="{{ airline.name or airline.code or 'Airline' }}"
+            >
+              {% if airline.logo_url %}
+                <img
+                  src="{{ airline.logo_url }}"
+                  alt="{{ airline.name or airline.code or 'Airline logo' }}"
+                  loading="lazy"
+                  data-fallback-code="{{ airline.code or '?' }}"
+                  onerror="this.outerHTML = '<span>' + (this.dataset.fallbackCode || '?') + '</span>';"
+                >
+              {% else %}
+                <span>{{ airline.code or "?" }}</span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+    <div class="summary-card">
+      <h3><i class="fa-solid fa-jet-fighter-up" aria-hidden="true"></i> Top aircraft type</h3>
+      <div class="summary-card__row">
+        <div>
+          <p data-summary="top-aircraft-label">{{ stats.top_aircraft[0] }}</p>
+          <span class="summary-sub" data-summary="top-aircraft-count">
+            {{ stats.top_aircraft[1] }} flights
+          </span>
+        </div>
+        <div class="summary-thumb">
+          {% if top_aircraft_thumb and top_aircraft_thumb.thumbnail_url %}
+            <img
+              src="{{ top_aircraft_thumb.thumbnail_url }}"
+              alt="Top aircraft type thumbnail"
+              loading="lazy"
+            >
+          {% else %}
+            <span class="summary-thumb__fallback" aria-hidden="true">No image</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% if top_tailnumber_thumb and top_tailnumber_thumb.photo_url %}
+      <button
+        type="button"
+        class="summary-card summary-card--action summary-card--tailnumber"
+        data-aircraft-lightbox
+        data-full-src="{{ top_tailnumber_thumb.photo_url }}"
+        data-title="{{ stats.top_tailnumber[0] }}"
+      >
+        <h3><i class="fa-solid fa-hashtag" aria-hidden="true"></i> Top tail number</h3>
+        <div class="summary-card__row">
+          <div>
+            <p class="mono" data-summary="top-tailnumber-label">{{ stats.top_tailnumber[0] }}</p>
+            <span class="summary-sub" data-summary="top-tailnumber-count">
+              {{ stats.top_tailnumber[1] }} flights
+            </span>
+          </div>
+          <div class="summary-thumb">
+            {% if top_tailnumber_thumb.thumbnail_url %}
+              <img
+                src="{{ top_tailnumber_thumb.thumbnail_url }}"
+                alt="Top tail number thumbnail"
+                loading="lazy"
+              >
+            {% else %}
+              <span class="summary-thumb__fallback" aria-hidden="true">No image</span>
+            {% endif %}
+          </div>
+        </div>
+      </button>
+    {% else %}
+      <div class="summary-card summary-card--tailnumber">
+        <h3><i class="fa-solid fa-hashtag" aria-hidden="true"></i> Top tail number</h3>
+        <div class="summary-card__row">
+          <div>
+            <p class="mono" data-summary="top-tailnumber-label">{{ stats.top_tailnumber[0] }}</p>
+            <span class="summary-sub" data-summary="top-tailnumber-count">
+              {{ stats.top_tailnumber[1] }} flights
+            </span>
+          </div>
+          <div class="summary-thumb">
+            {% if top_tailnumber_thumb and top_tailnumber_thumb.thumbnail_url %}
+              <img
+                src="{{ top_tailnumber_thumb.thumbnail_url }}"
+                alt="Top tail number thumbnail"
+                loading="lazy"
+              >
+            {% else %}
+              <span class="summary-thumb__fallback" aria-hidden="true">No image</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+    {% if first_flight_thumb and first_flight_thumb.photo_url %}
+      <button
+        type="button"
+        class="summary-card summary-card--action summary-card--flight-photo"
+        data-aircraft-lightbox
+        data-full-src="{{ first_flight_thumb.photo_url }}"
+        data-title="First flight {{ first_flight_summary.registration }}"
+      >
+        <h3><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i> First flight</h3>
+        <div class="summary-card__row">
+          <div>
+            <p class="mono">{{ first_flight_summary.date or "-" }}</p>
+            <span class="summary-sub">Reg {{ first_flight_summary.registration }}</span>
+          </div>
+          <div class="summary-thumb">
+            {% if first_flight_thumb.thumbnail_url %}
+              <img src="{{ first_flight_thumb.thumbnail_url }}" alt="First flight aircraft thumbnail" loading="lazy">
+            {% else %}
+              <span class="summary-thumb__fallback" aria-hidden="true">No image</span>
+            {% endif %}
+          </div>
+        </div>
+      </button>
+    {% else %}
+      <div class="summary-card summary-card--flight-photo">
+        <h3><i class="fa-solid fa-flag-checkered" aria-hidden="true"></i> First flight</h3>
+        <div class="summary-card__row">
+          <div>
+            <p class="mono">{{ first_flight_summary.date or "-" }}</p>
+            <span class="summary-sub">Reg {{ first_flight_summary.registration }}</span>
+          </div>
+          <div class="summary-thumb">
+            <span class="summary-thumb__fallback" aria-hidden="true">No image</span>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+    {% if last_flight_thumb and last_flight_thumb.photo_url %}
+      <button
+        type="button"
+        class="summary-card summary-card--action summary-card--flight-photo"
+        data-aircraft-lightbox
+        data-full-src="{{ last_flight_thumb.photo_url }}"
+        data-title="Last flight {{ last_flight_summary.registration }}"
+      >
+        <h3><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i> Last flight</h3>
+        <div class="summary-card__row">
+          <div>
+            <p class="mono">{{ last_flight_summary.date or "-" }}</p>
+            <span class="summary-sub">Reg {{ last_flight_summary.registration }}</span>
+          </div>
+          <div class="summary-thumb">
+            {% if last_flight_thumb.thumbnail_url %}
+              <img src="{{ last_flight_thumb.thumbnail_url }}" alt="Last flight aircraft thumbnail" loading="lazy">
+            {% else %}
+              <span class="summary-thumb__fallback" aria-hidden="true">No image</span>
+            {% endif %}
+          </div>
+        </div>
+      </button>
+    {% else %}
+      <div class="summary-card summary-card--flight-photo">
+        <h3><i class="fa-solid fa-plane-arrival" aria-hidden="true"></i> Last flight</h3>
+        <div class="summary-card__row">
+          <div>
+            <p class="mono">{{ last_flight_summary.date or "-" }}</p>
+            <span class="summary-sub">Reg {{ last_flight_summary.registration }}</span>
+          </div>
+          <div class="summary-thumb">
+            <span class="summary-thumb__fallback" aria-hidden="true">No image</span>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  <details class="panel dashboard-filter filter-collapsible">
+    <summary class="panel-header filter-collapsible__summary">
+      <h2><i class="fa-solid fa-filter" aria-hidden="true"></i> Filters</h2>
+      <span class="panel-meta">Traveller, booking site and chart selections</span>
+    </summary>
+    <div class="filter-collapsible__body">
+      <div class="filter-section">
+        <h3 class="filter-section__title">Traveller</h3>
+        <div class="chip-input" data-traveller-chip-input>
+          <div class="chip-input__chips" data-chip-list></div>
+          <input
+            type="text"
+            placeholder="Add traveller filters…"
+            aria-label="Add traveller filters"
+            list="traveller-options"
+            data-chip-input
+          >
+          <datalist id="traveller-options">
+            {% for traveller in travellers %}
+              <option value="{{ traveller.label }}">{{ traveller.label }}</option>
+            {% endfor %}
+          </datalist>
+        </div>
+        <div class="filter-toggle" data-traveller-mode-toggle>
+          <span class="filter-toggle__label">Mode</span>
+          <div class="chip-group">
+            <button type="button" class="chip is-active" data-filter-mode="include">
+              Include
+            </button>
+            <button type="button" class="chip" data-filter-mode="exclude">
+              Exclude
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="filter-section">
+        <h3 class="filter-section__title">Booking site</h3>
+        <div class="chip-input" data-booking-site-chip-input>
+          <div class="chip-input__chips" data-chip-list></div>
+          <input
+            type="text"
+            placeholder="Add booking site filters…"
+            aria-label="Add booking site filters"
+            list="booking-site-options"
+            data-chip-input
+          >
+          <datalist id="booking-site-options">
+            {% for site in booking_sites %}
+              <option value="{{ site.label }}">{{ site.label }}</option>
+            {% endfor %}
+          </datalist>
+        </div>
+      </div>
+      <div class="filter-section">
+        <h3 class="filter-section__title">Chart selections</h3>
+        <div class="chip-input chip-input--static" data-dashboard-table-filter>
+          <div class="chip-input__chips" data-dashboard-table-chip-list></div>
+          <button
+            type="button"
+            class="button ghost chip-input__clear"
+            data-dashboard-table-clear
+            disabled
+          >
+            Clear all
+          </button>
+        </div>
+        <p class="muted" style="margin-top: 0; font-size: 0.8rem;">Click a row in any table below to filter the whole dashboard by it.</p>
+      </div>
+    </div>
+  </details>
+
+  <section class="dashboard-grid">
+    <div class="panel panel--wide">
+      <div class="panel-header">
+        <h2 data-distance-chart-title>Flights & Miles by Month</h2>
+      </div>
+      <canvas id="monthlyChart"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Top destination countries</h2>
+        <span class="panel-meta" data-meta="countries-total">
+          {{ stats.top_countries|length }} total
+        </span>
+      </div>
+      <canvas id="topCountriesChart"></canvas>
+      <div class="stats-table" data-table="countries" data-empty="No country data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Country</th>
+              <th>Flights</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Top destination cities</h2>
+        <span class="panel-meta" data-meta="cities-total">
+          {{ stats.top_cities|length }} total
+        </span>
+      </div>
+      <canvas id="topCitiesChart"></canvas>
+      <div class="stats-table" data-table="cities" data-empty="No city data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>City</th>
+              <th>Flights</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Top airlines</h2>
+        <span class="panel-meta" data-meta="airlines-total">
+          {{ stats.top_airlines|length }} total
+        </span>
+      </div>
+      <canvas id="topAirlinesChart"></canvas>
+      <div class="stats-table" data-table="airlines" data-empty="No airline data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Airline</th>
+              <th>Flights</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Top aircraft types</h2>
+        <span class="panel-meta" data-meta="aircraft-total">
+          {{ stats.top_aircrafts|length }} total
+        </span>
+      </div>
+      <canvas id="topAircraftChart"></canvas>
+      <div class="stats-table" data-table="aircraft" data-empty="No aircraft data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Aircraft</th>
+              <th>Flights</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2 data-distance-aircraft-miles-title>Top Aircraft Type Miles</h2>
+        <span class="panel-meta" data-meta="aircraft-miles-total">
+          {{ stats.top_aircraft_miles|length }} total
+        </span>
+      </div>
+      <canvas id="topAircraftMilesChart"></canvas>
+      <div
+        class="stats-table"
+        data-table="aircraft_miles"
+        data-empty="No aircraft mile data."
+      >
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Aircraft</th>
+              <th data-distance-miles-label>Miles (mi)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Top tail numbers</h2>
+        <span class="panel-meta" data-meta="tailnumbers-total">
+          {{ stats.top_tailnumbers|length }} total
+        </span>
+      </div>
+      <canvas id="topTailnumbersChart"></canvas>
+      <div class="stats-table" data-table="tailnumbers" data-empty="No tailnumber data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Registration</th>
+              <th>Flights</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Top routes</h2>
+        <span class="panel-meta" data-meta="routes-total">
+          {{ stats.top_routes|length }} total
+        </span>
+      </div>
+      <canvas id="topRoutesChart"></canvas>
+      <div class="stats-table" data-table="routes" data-empty="No route data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Route</th>
+              <th>Flights</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Flights by year</h2>
+        <span class="panel-meta" data-meta="years-total">
+          {{ stats.yearly|length }} total
+        </span>
+      </div>
+      <canvas id="yearlyChart"></canvas>
+      <div class="stats-table" data-table="years" data-empty="No yearly data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Flights</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Miles by year</h2>
+        <span class="panel-meta" data-meta="yearly-miles-total">
+          {{ stats.yearly_miles|length }} total
+        </span>
+      </div>
+      <canvas id="yearlyMilesChart"></canvas>
+      <div class="stats-table" data-table="yearly_miles" data-empty="No yearly miles data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th data-distance-miles-label>Miles</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>CO₂ emissions by year</h2>
+        <span class="panel-meta" data-meta="yearly-co2-total">
+          {{ stats.yearly_co2|length }} total
+        </span>
+      </div>
+      <canvas id="yearlyCo2Chart"></canvas>
+      <div class="stats-table" data-table="yearly_co2" data-empty="No CO₂ data.">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>CO₂ (kg)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="pagination" data-pagination></div>
+      </div>
+    </div>
+    <div class="panel map-panel" data-map-panel>
+      <div class="panel-header">
+        <h2>Route map</h2>
+        <div class="map-controls">
+          <label class="map-control">
+            <span class="sr-only">Colour routes by</span>
+            <select data-map-color-scheme aria-label="Colour routes by">
+              <option value="default">Single colour</option>
+              <option value="airline">Airline</option>
+              <option value="year">Year (old → recent)</option>
+              <option value="direction">Direction</option>
+              <option value="aircraft">Aircraft type</option>
+            </select>
+          </label>
+          <button class="map-fullscreen-btn" data-map-fullscreen-toggle title="Toggle fullscreen" aria-label="Toggle fullscreen">
+            <svg class="fullscreen-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+            <svg class="minimize-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+              <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="map-container" data-map-container>
+        <div id="routeMap"></div>
+        <div class="map-loading-indicator" data-map-loading-indicator hidden>Loading routes…</div>
+      </div>
+      <div class="map-legend" data-map-legend hidden></div>
+      {% if map_routes|length == 0 %}
+        <p class="muted">Add flights with origin and destination airports to draw the map.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Recent flights</h2>
+      <a class="button ghost button--sm" href="{{ url_for('main.flight_list') }}">View all</a>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Origin</th>
+            <th>Destination</th>
+            <th>Flight</th>
+            <th data-distance-table-label>Distance (mi)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody data-recent-flights></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    window.flightCharts = {{ chart_payload | safe }};
+    window.mapRoutes = {{ map_routes | tojson }};
+    window.dashboardFlights = {{ dashboard_flights | tojson }};
+    window.travellerOptions = {{ travellers | tojson }};
+    window.bookingSiteOptions = {{ booking_sites | tojson }};
+    window.airlineLookup = {{ airline_lookup | tojson }};
+    window.airlineLogoTemplate = {{ airline_logo_template | tojson }};
+    window.flightEditUrlTemplate = "{{ url_for('main.flight_edit', flight_id=0) }}";
+    window.statsTables = {
+      cities: {{ stats.top_cities | tojson }},
+      airlines: {{ stats.top_airlines | tojson }},
+      aircraft: {{ stats.top_aircrafts | tojson }},
+      aircraft_miles: {{ stats.top_aircraft_miles | tojson }},
+      countries: {{ stats.top_countries | tojson }},
+      routes: {{ stats.top_routes | tojson }},
+      years: {{ stats.yearly | tojson }},
+      yearly_miles: {{ stats.yearly_miles | tojson }},
+      yearly_co2: {{ stats.yearly_co2 | tojson }},
+      tailnumbers: {{ stats.top_tailnumbers | tojson }},
+    };
+  </script>
+
+  <section class="modal" data-quick-edit-modal hidden>
+    <div class="modal__backdrop" data-quick-edit-close></div>
+    <div
+      class="modal__content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quick-edit-title"
+    >
+      <div class="modal__header">
+        <div>
+          <h2 id="quick-edit-title">
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+            Quick edit flight
+          </h2>
+          <p class="muted" data-quick-edit-subtitle></p>
+        </div>
+        <button class="button ghost modal__close" type="button" data-quick-edit-close aria-label="Close">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="modal__body">
+        <form class="quick-add-form" data-quick-edit-form novalidate>
+          <input type="hidden" name="flight_id" data-quick-edit-id>
+          <div class="quick-add-form__grid">
+            <label class="quick-add-form__field quick-add-form__field--reg">
+              Registration
+              <input type="text" name="aircraft_registration" autocomplete="off">
+            </label>
+            <label class="quick-add-form__field">
+              Aircraft type
+              <input type="text" name="aircraft" autocomplete="off">
+            </label>
+            <label class="quick-add-form__field">
+              Airline code
+              <input type="text" name="airline_code" autocomplete="off">
+            </label>
+            <label class="quick-add-form__field">
+              Flight number
+              <input type="text" name="flight_number" autocomplete="off">
+            </label>
+            <label class="quick-add-form__field">
+              From (airport)
+              <input
+                type="text"
+                name="start_airport"
+                autocomplete="off"
+                required
+                data-airport-lookup
+                data-airport-city-field="start_city_name"
+                data-airport-country-field="start_country"
+              >
+              <input type="hidden" name="start_city_name">
+              <input type="hidden" name="start_country">
+            </label>
+            <label class="quick-add-form__field">
+              To (airport)
+              <input
+                type="text"
+                name="end_airport"
+                autocomplete="off"
+                required
+                data-airport-lookup
+                data-airport-city-field="end_city_name"
+                data-airport-country-field="end_country"
+              >
+              <input type="hidden" name="end_city_name">
+              <input type="hidden" name="end_country">
+            </label>
+            <label class="quick-add-form__field">
+              Departure date
+              <input type="date" name="start_date" required>
+            </label>
+            <label class="quick-add-form__field">
+              Arrival date
+              <input type="date" name="end_date" required>
+            </label>
+          </div>
+          <p class="quick-add-form__resolved muted" data-quick-edit-resolved hidden></p>
+          <p class="quick-add-form__error" data-quick-edit-error hidden></p>
+          <div class="quick-add-form__actions">
+            <button type="submit" class="button">
+              <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+              Save changes
+            </button>
+            <button type="button" class="button ghost" data-quick-edit-close>Cancel</button>
+            <a class="button ghost" data-quick-edit-full href="#">
+              Open full form
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="modal" data-aircraft-modal hidden>
+    <div class="modal__backdrop" data-aircraft-close></div>
+    <div
+      class="modal__content modal__content--media"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="aircraft-lightbox-title"
+    >
+      <div class="modal__header">
+        <h2 id="aircraft-lightbox-title" data-aircraft-modal-title>Aircraft image</h2>
+        <button class="button ghost modal__close" type="button" data-aircraft-close aria-label="Close">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="modal__body">
+        <img
+          class="aircraft-lightbox__image"
+          data-aircraft-modal-image
+          src=""
+          alt=""
+          loading="lazy"
+        >
+      </div>
+    </div>
+  </section>
+
+  {% if next_flight_card %}
+    <section class="modal" data-next-flight-modal hidden>
+      <div class="modal__backdrop" data-next-flight-close></div>
+      <div
+        class="modal__content modal__content--wide"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="next-flight-modal-title"
+      >
+        <div class="modal__header">
+          <h2 id="next-flight-modal-title">
+            <i class="fa-solid fa-plane-departure" aria-hidden="true"></i>
+            Next flight &mdash;
+            <span class="mono">{{ next_flight_card.airline_code or '' }}{{ next_flight_card.flight_number or '' }}</span>
+          </h2>
+          <button class="button ghost modal__close" type="button" data-next-flight-close aria-label="Close">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="modal__body">
+          <div class="nf-modal__flight-info">
+            <div class="nf-modal__route">
+              <div class="nf-modal__airport">
+                <span class="nf-modal__iata">{{ next_flight_card.origin_code or '-' }}</span>
+                <span class="nf-modal__city">{{ next_flight_card.origin or '-' }}</span>
+              </div>
+              <div class="nf-modal__route-line">
+                <span class="nf-modal__route-dash"></span>
+                <i class="fa-solid fa-plane" aria-hidden="true"></i>
+                <span class="nf-modal__route-dash"></span>
+              </div>
+              <div class="nf-modal__airport">
+                <span class="nf-modal__iata">{{ next_flight_card.destination_code or '-' }}</span>
+                <span class="nf-modal__city">{{ next_flight_card.destination or '-' }}</span>
+              </div>
+            </div>
+            <dl class="nf-modal__details">
+              <div>
+                <dt>Date</dt>
+                <dd>{{ next_flight_card.date or '-' }}{% if next_flight_card.time %} at {{ next_flight_card.time }}{% endif %}</dd>
+              </div>
+              <div>
+                <dt>Airline</dt>
+                <dd>{{ next_flight_card.airline_name or next_flight_card.airline_code or '-' }}</dd>
+              </div>
+              <div>
+                <dt>Flight</dt>
+                <dd>{{ next_flight_card.airline_code or '' }}{{ next_flight_card.flight_number or '-' }}</dd>
+              </div>
+              <div>
+                <dt>Aircraft</dt>
+                <dd>{{ next_flight_card.aircraft or '-' }}</dd>
+              </div>
+              {% if next_flight_card.aircraft_registration %}
+                <div>
+                  <dt>Registration</dt>
+                  <dd>{{ next_flight_card.aircraft_registration }}</dd>
+                </div>
+              {% endif %}
+            </dl>
+          </div>
+          <div class="nf-modal__aircraft-section" data-nf-aircraft-section>
+            <div class="nf-modal__aircraft-loading" data-nf-aircraft-loading hidden>
+              <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Loading aircraft details…
+            </div>
+            <div class="nf-modal__aircraft-content" data-nf-aircraft-content hidden>
+              <div class="nf-modal__aircraft-grid">
+                <div class="nf-modal__photo-col" data-nf-photo-col hidden>
+                  <img class="nf-modal__photo" data-nf-photo src="" alt="" loading="lazy">
+                </div>
+                <div class="nf-modal__info-col">
+                  <dl class="nf-modal__aircraft-details" data-nf-aircraft-details></dl>
+                </div>
+              </div>
+            </div>
+            <div class="nf-modal__aircraft-empty" data-nf-aircraft-empty hidden>
+              No aircraft details available.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

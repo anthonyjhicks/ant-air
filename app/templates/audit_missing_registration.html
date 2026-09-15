@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Missing Reg (aircraft_registration) Audit</h2>
+        <div class="panel-meta">
+          {{ total_grouped }} grouped record{{ 's' if total_grouped != 1 else '' }} ({{ total_raw }} flight{{ 's' if total_raw != 1 else '' }} total) missing aircraft registration
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if counts_by_year %}
+  <section class="summary-grid">
+    {% for year, count in counts_by_year %}
+    <div class="summary-card">
+      <h3>{{ year if year else "Unknown" }}</h3>
+      <p>{{ count }}</p>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="panel">
+    {% if flights %}
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Group</th>
+            <th>Date</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Reg</th>
+            <th>Aircraft</th>
+            <th>Flight</th>
+            <th>Airline</th>
+            <th>Source</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for flight in flights %}
+            <tr>
+              <td>{{ flight.id }}</td>
+              <td>
+                {% if flight.grouping_id %}
+                  {{ flight.grouping_id[:8] }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ flight.start_date }}</td>
+              <td>{{ flight.origin_name or "-" }}</td>
+              <td>{{ flight.destination_name or "-" }}</td>
+              <td>{{ flight.aircraft_registration or "-" }}</td>
+              <td>{{ flight.aircraft or "-" }}</td>
+              <td>{{ flight.flight_number or "-" }}</td>
+              <td>{{ flight.airline_code or "-" }}</td>
+              <td>{{ flight.source_file or "-" }}</td>
+              <td class="actions">
+                <a
+                  class="button ghost"
+                  href="{{ url_for('main.flight_edit', flight_id=flight.id, next=request.path) }}"
+                >
+                  Edit
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No flights are missing aircraft registration.</p>
+    {% endif %}
+  </section>
+{% endblock %}
