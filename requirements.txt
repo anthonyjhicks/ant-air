@@ -5,5 +5,5 @@ gunicorn==22.0.0
 psycopg[binary]==3.2.13
 python-dotenv==1.2.2
 pycountry
-PyJWT==2.13.0
+PyJWT[crypto]==2.13.0
 mcp==1.27.0

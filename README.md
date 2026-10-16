@@ -258,6 +258,17 @@ Claude Desktop only launches stdio servers, so bridge with `mcp-remote`:
 }
 ```
 
+**Behind Cloudflare Access.** To publish the endpoint on the internet, put it
+behind a Cloudflare Tunnel and a Cloudflare Access self-hosted application
+with Managed OAuth turned on: Access then handles sign-in, and Claude
+connects to `https://<your hostname>/mcp` as a remote MCP server. Set
+`CF_ACCESS_TEAM_DOMAIN` (`https://<team>.cloudflareaccess.com`) and
+`CF_ACCESS_AUD` (the application's AUD tag) and the server also checks the
+`Cf-Access-Jwt-Assertion` JWT that Access adds to each request, answering
+403 to anything that did not come through Access, such as a request to the
+server's own address on your network. Use this instead of `MCP_AUTH_TOKEN`,
+not alongside it.
+
 ---
 
 ## Deployment
@@ -357,8 +368,9 @@ app's settings. See [`PLAN-iOS.md`](PLAN-iOS.md) for the design.
   webhook are token-protected.
 - Never commit `.env` or anything under `import/`; both are
   gitignored.
-- The MCP endpoint can read and write your whole log. Keep it private or set
-  `MCP_AUTH_TOKEN`.
+- The MCP endpoint can read and write your whole log. Keep it private, set
+  `MCP_AUTH_TOKEN`, or publish it only through Cloudflare Access with
+  `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` set.
 
 ## License
 

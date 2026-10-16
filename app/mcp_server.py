@@ -7,10 +7,16 @@ Or serve over streamable HTTP, e.g. inside the Kubernetes cluster:
     MCP_TRANSPORT=streamable-http MCP_PORT=8001 python -m app.mcp_server
 
 HTTP settings (all optional): MCP_HOST (0.0.0.0), MCP_PORT (8001), MCP_PATH
-(/mcp), MCP_STATELESS (true), MCP_JSON_RESPONSE (false), MCP_LOG_LEVEL (info)
-and MCP_AUTH_TOKEN. When MCP_AUTH_TOKEN is set every request except /healthz
-must carry ``Authorization: Bearer <token>``; leave it unset to rely on
-network isolation alone.
+(/mcp), MCP_STATELESS (true), MCP_JSON_RESPONSE (false), MCP_LOG_LEVEL (info),
+MCP_AUTH_TOKEN, CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD. Pick at most one way
+to authenticate; /healthz is always open:
+
+- MCP_AUTH_TOKEN: every request must carry ``Authorization: Bearer <token>``.
+- CF_ACCESS_TEAM_DOMAIN + CF_ACCESS_AUD: for an endpoint published behind a
+  Cloudflare Access application, every request must carry a valid
+  ``Cf-Access-Jwt-Assertion`` for that application (see mcp_access.py), so
+  anything that bypasses Access gets 403.
+- Neither: rely on network isolation alone.
 
 Reuses the Flask app's SQLAlchemy models and helpers so behavior matches the
 REST API. A Flask app context is pushed once at startup; each tool call wraps
@@ -28,10 +34,11 @@ from typing import Annotated, Any, Optional
 from flask import current_app
 from pydantic import Field
 from sqlalchemy import func, or_, text
+from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from . import create_app
+from . import create_app, mcp_access
 from .api_v1 import (
     apply_leg_fields,
     apply_trip_fields,
@@ -2025,7 +2032,8 @@ def distance_summary(year: Optional[int] = None) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# HTTP transport support: health probe + optional bearer token
+# HTTP transport support: health probe + optional bearer token or
+# Cloudflare Access check
 # ---------------------------------------------------------------------------
 
 @mcp.custom_route("/healthz", methods=["GET"], include_in_schema=False)
@@ -2073,11 +2081,52 @@ class _BearerTokenMiddleware:
         await self.app(scope, receive, send)
 
 
+class _CloudflareAccessMiddleware:
+    """Reject HTTP requests that did not come through Cloudflare Access.
+
+    Access answers clients that still need to sign in with its own 401 and
+    OAuth metadata before they reach the server, so a request without a
+    valid Cf-Access-Jwt-Assertion for this application bypassed Access (or
+    belongs to another application) and gets 403. /healthz stays open
+    because Kubernetes probes hit the pod directly.
+    """
+
+    def __init__(self, app, cfg: mcp_access.AccessConfig,
+                 exempt_paths: tuple[str, ...] = ("/healthz",)):
+        self.app = app
+        self.cfg = cfg
+        self.exempt_paths = exempt_paths
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("path") in self.exempt_paths:
+            await self.app(scope, receive, send)
+            return
+        headers = dict(scope.get("headers") or [])
+        token = headers.get(mcp_access.HEADER.encode(), b"").decode("latin-1")
+        if token and await run_in_threadpool(mcp_access.verify, self.cfg, token):
+            await self.app(scope, receive, send)
+            return
+        response = JSONResponse(
+            {"error": "forbidden",
+             "message": "Request did not come through Cloudflare Access"},
+            status_code=403,
+        )
+        await response(scope, receive, send)
+
+
 def build_http_app():
     """The ASGI app served in streamable-http mode (also handy for tests)."""
+    access_cfg = mcp_access.AccessConfig()
+    if access_cfg.partial:
+        raise SystemExit(
+            "Set both CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD to require "
+            "Cloudflare Access, or neither."
+        )
     asgi_app = mcp.streamable_http_app()
     if MCP_AUTH_TOKEN:
         asgi_app = _BearerTokenMiddleware(asgi_app, MCP_AUTH_TOKEN)
+    if access_cfg.enabled:
+        asgi_app = _CloudflareAccessMiddleware(asgi_app, access_cfg)
     return asgi_app
 
 
