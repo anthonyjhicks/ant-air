@@ -6,4 +6,4 @@ psycopg[binary]==3.2.13
 python-dotenv==1.2.2
 pycountry
 PyJWT[crypto]==2.13.0
-mcp==1.27.0
+mcp==1.30.0
