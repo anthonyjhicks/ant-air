@@ -1,8 +1,13 @@
 """The MCP server's optional Cloudflare Access check (app/mcp_access.py)."""
+import base64
+import hashlib
+import hmac
+import json
 import time
 
 import jwt
 import pytest
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from starlette.responses import PlainTextResponse
 from starlette.testclient import TestClient
@@ -89,6 +94,86 @@ def test_requests_without_a_valid_access_jwt_get_403(guarded, token):
     response = _post(guarded, token=token)
     assert response.status_code == 403
     assert response.json()["error"] == "forbidden"
+
+
+class _JWKSServer:
+    """Serves a JWK Set to the real PyJWKClient in place of the network."""
+
+    def __init__(self, *keys):
+        self.jwks = {"keys": [
+            {**json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(k.public_key())),
+             "kid": kid, "alg": "RS256", "use": "sig"}
+            for kid, k in keys
+        ]}
+        self.urls = []
+
+    def fetch_data(self, client):
+        self.urls.append(client.uri)
+        return json.loads(json.dumps(self.jwks))
+
+
+@pytest.fixture
+def real_jwks(monkeypatch):
+    """AccessConfig with its real PyJWKClient (key parsing, kid lookup,
+    caching); only the HTTP fetch of the certs URL is faked."""
+    monkeypatch.setenv("CF_ACCESS_TEAM_DOMAIN", "example.cloudflareaccess.com")
+    monkeypatch.setenv("CF_ACCESS_AUD", AUD)
+    server = _JWKSServer(("test", PRIVATE_KEY))
+    monkeypatch.setattr(jwt.PyJWKClient, "fetch_data",
+                        lambda client: server.fetch_data(client))
+    return mcp_access.AccessConfig(), server
+
+
+def test_verify_loads_the_signing_key_from_the_access_certs(real_jwks):
+    cfg, server = real_jwks
+    claims = mcp_access.verify(cfg, _token())
+    assert claims is not None
+    assert claims["email"] == "someone@example.com"
+    assert claims["iss"] == TEAM and claims["aud"] == [AUD]
+    assert server.urls == [cfg.certs_url]
+    # The key set is cached: a second token does not refetch the certs.
+    assert mcp_access.verify(cfg, _token()) is not None
+    assert len(server.urls) == 1
+
+
+def _public_pem():
+    return PRIVATE_KEY.public_key().public_bytes(
+        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+
+
+@pytest.mark.parametrize("make_token", [
+    lambda: _token(key=OTHER_KEY),
+    lambda: jwt.encode({"iss": TEAM, "aud": [AUD]}, PRIVATE_KEY, algorithm="RS256",
+                       headers={"kid": "unknown"}),
+    # HS256 signed with the published public key as the HMAC secret: the
+    # classic algorithm-confusion forgery, with the line endings mutated
+    # the way GHSA-ffc3-869f-jxw9 describes.
+    lambda: _forge_hs256(_public_pem()),
+    lambda: _forge_hs256(_public_pem().replace(b"\n", b"\r\n")),
+    lambda: _forge_hs256(b"  " + _public_pem()),
+    lambda: _token(aud=["another-application"]),
+    lambda: _token(iss="https://other-team.cloudflareaccess.com"),
+    lambda: _token(exp=int(time.time()) - 60),
+], ids=["wrong-key", "unknown-kid", "hs256-public-pem", "hs256-crlf-pem",
+        "hs256-whitespace-pem", "wrong-aud", "wrong-iss", "expired"])
+def test_verify_rejects_forged_or_foreign_tokens(real_jwks, make_token):
+    cfg, _ = real_jwks
+    assert mcp_access.verify(cfg, make_token()) is None
+
+
+def _forge_hs256(secret: bytes) -> str:
+    """Sign HS256 by hand: PyJWT itself refuses PEM material as an HMAC key."""
+    now = int(time.time())
+
+    def b64(data: bytes) -> bytes:
+        return base64.urlsafe_b64encode(data).rstrip(b"=")
+
+    header = b64(json.dumps({"alg": "HS256", "typ": "JWT", "kid": "test"}).encode())
+    payload = b64(json.dumps({"iss": TEAM, "aud": [AUD], "iat": now,
+                              "exp": now + 300}).encode())
+    signing_input = header + b"." + payload
+    signature = b64(hmac.new(secret, signing_input, hashlib.sha256).digest())
+    return (signing_input + b"." + signature).decode()
 
 
 def test_healthz_stays_open(guarded):
