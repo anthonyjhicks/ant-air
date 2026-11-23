@@ -1,5 +1,7 @@
 # Ant Air — iOS App Plan
 
+> **Superseded for the client** by [docs/mobile.md](docs/mobile.md): a React Native app for iOS and Android that replaces the SwiftUI app. The backend design below (REST API, revision-based sync, conflict merge) is built and still current.
+
 Full offline-capable iOS client with two-way sync against the existing Flask/PostgreSQL backend.
 
 ---
