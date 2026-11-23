@@ -359,6 +359,11 @@ to flights, trips, aircraft and badges. Create a user with
 `scripts/create_api_user.py`, then enter the server URL and credentials in the
 app's settings. See [`PLAN-iOS.md`](PLAN-iOS.md) for the design.
 
+It is due to be replaced by a React Native app for iOS and Android that signs
+in to a hosted Ant Air or to your own server and works offline: see
+[`docs/mobile.md`](docs/mobile.md), and [`docs/hosted.md`](docs/hosted.md) for
+the hosted and self-hosted editions.
+
 ---
 
 ## Security notes
